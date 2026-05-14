@@ -18,6 +18,10 @@ function connectUrl(formId) {
   return APP_BASE + '/app?form=' + encodeURIComponent(formId) + '&feature=' + FEATURE;
 }
 
+function syncUrl(formId) {
+  return APP_BASE + '/app?form=' + encodeURIComponent(formId) + '&feature=' + FEATURE + '&sync=1';
+}
+
 function previewUrl(formId) {
   return APP_BASE + '/f/' + formId;
 }

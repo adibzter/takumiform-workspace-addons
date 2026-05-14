@@ -28,31 +28,29 @@ function showSidebar() {
 function getEmbedData() {
   const form = FormApp.getActiveForm();
   const formId = form.getId();
+  const status = fetchStatus(formId);
   return {
     formId: formId,
     title: form.getTitle() || 'Untitled form',
-    connected: isConnected(formId),
+    connected: status.connected,
+    updatedAt: status.updatedAt || null,
     script: scriptSnippet(formId),
     iframe: iframeSnippet(formId),
     connectUrl: connectUrl(formId),
+    syncUrl: syncUrl(formId),
     previewUrl: previewUrl(formId)
   };
 }
 
-// Called by the sidebar's "Refresh" link after the user has gone through
-// the Connect flow in a new tab. Returns just the connection status so
-// the UI can flip without a full reload.
-function checkConnection() {
-  return { connected: isConnected(FormApp.getActiveForm().getId()) };
-}
-
-function isConnected(formId) {
+// Returns { connected: bool, updatedAt?: number } from our server. Used
+// by the sidebar on load and by the "Refresh" link after the user has
+// connected or synced in a separate tab.
+function fetchStatus(formId) {
   try {
     const res = UrlFetchApp.fetch(statusUrl(formId), { muteHttpExceptions: true });
-    if (res.getResponseCode() !== 200) return false;
-    const body = JSON.parse(res.getContentText());
-    return body.connected === true;
+    if (res.getResponseCode() !== 200) return { connected: false };
+    return JSON.parse(res.getContentText());
   } catch (e) {
-    return false;
+    return { connected: false };
   }
 }

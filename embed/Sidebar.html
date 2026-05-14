@@ -21,6 +21,10 @@
       .copy:hover { background: #f1f3f4; }
       .copy.copied { color: #137333; border-color: #137333; }
       .hint { font-size: 12px; line-height: 1.45; color: #5f6368; margin: 0 0 18px; }
+      .freshness { font-size: 12px; line-height: 1.4; color: #5f6368; margin: 0 0 18px; }
+      .freshness a, .freshness .link { color: #1a73e8; text-decoration: none; }
+      .freshness a:hover, .freshness .link:hover { text-decoration: underline; }
+      .freshness .dot { margin: 0 6px; color: #bdc1c6; }
       .row { display: flex; gap: 8px; margin-bottom: 4px; }
       .row .btn { flex: 1; padding: 8px 10px; font-size: 13px; }
       details { margin-top: 18px; border-top: 1px solid #e8eaed; padding-top: 14px; }
@@ -75,9 +79,19 @@
       }
 
       function renderConnected(d) {
+        const synced = d.updatedAt ? syncedAgo(d.updatedAt) : null;
         return `
           <p class="title">${escapeHtml(d.title)}</p>
           <span class="badge ok">Connected</span>
+
+          ${synced ? `
+            <p class="freshness">
+              Synced ${escapeHtml(synced)}.
+              <a href="${escapeHtml(d.syncUrl)}" target="_blank">Sync now</a>
+              <span class="dot">·</span>
+              <button class="link" id="refresh">Refresh status</button>
+            </p>
+          ` : ''}
 
           <p class="label">Embed snippet</p>
           ${snippetBox('s1', d.script)}
@@ -99,6 +113,21 @@
             </p>
           </details>
         `;
+      }
+
+      // Apps Script gives us a millisecond epoch — format it client-side
+      // so the sidebar matches the dashboard's "Synced X ago" phrasing.
+      function syncedAgo(ms) {
+        const diff = Date.now() - ms;
+        const sec = Math.floor(diff / 1000);
+        if (sec < 30) return 'just now';
+        if (sec < 60) return sec + 's ago';
+        const min = Math.floor(sec / 60);
+        if (min < 60) return min + ' min ago';
+        const hr = Math.floor(min / 60);
+        if (hr < 24) return hr + 'h ago';
+        const day = Math.floor(hr / 24);
+        return day + 'd ago';
       }
 
       function snippetBox(id, value) {
