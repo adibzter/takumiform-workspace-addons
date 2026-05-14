@@ -1,0 +1,34 @@
+{
+  "timeZone": "Etc/UTC",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/forms.currentonly",
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/script.locale"
+  ],
+  "urlFetchWhitelist": [
+    "https://takumiform.com/"
+  ],
+  "addOns": {
+    "common": {
+      "name": "TakumiForm — Quiz Scoring",
+      "logoUrl": "https://takumiform.com/addon/quiz-scoring/logo.png",
+      "useLocaleFromApp": true,
+      "homepageTrigger": {
+        "runFunction": "onHomepage",
+        "enabled": true
+      },
+      "openLinkUrlPrefixes": ["https://takumiform.com/"]
+    },
+    "forms": {
+      "homepageTrigger": {
+        "runFunction": "onFormsHomepage",
+        "enabled": true
+      },
+      "onFileScopeGrantedTrigger": {
+        "runFunction": "onFileScopeGranted"
+      }
+    }
+  }
+}
