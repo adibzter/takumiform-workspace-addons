@@ -7,17 +7,6 @@ function scriptSnippet(formId) {
   );
 }
 
-function reactSnippet(formId) {
-  return (
-    "import { TakumiForm } from '" + NPM_PKG + "'\n\n" +
-    '<TakumiForm formId="' + formId + '" />'
-  );
-}
-
-function reactInstall() {
-  return 'npm i ' + NPM_PKG;
-}
-
 function iframeSnippet(formId) {
   return (
     '<iframe src="' + APP_BASE + '/f/' + formId + '"\n' +
@@ -25,6 +14,14 @@ function iframeSnippet(formId) {
   );
 }
 
-function editorUrl(formId) {
+function connectUrl(formId) {
   return APP_BASE + '/app?form=' + encodeURIComponent(formId) + '&feature=' + FEATURE;
+}
+
+function previewUrl(formId) {
+  return APP_BASE + '/f/' + formId;
+}
+
+function statusUrl(formId) {
+  return APP_BASE + '/api/forms/status?formId=' + encodeURIComponent(formId);
 }
