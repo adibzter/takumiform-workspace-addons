@@ -21,23 +21,18 @@
       load();
       autoPublish();
 
-      // Auto-publish — fires on every modal open. Result is surfaced
-      // in a small banner at the top of the modal so failures aren't
-      // silent (they were before — only `withFailureHandler` was wired,
-      // which fires on exception, not on `{ok: false}` results).
+      // Auto-publish — fires on every modal open. Silent on success
+      // (the modal's own "Loading…" / connected state is enough signal
+      // that things are working). Only surfaces a banner if publishing
+      // actually fails, since the user can't fix what they can't see.
       function autoPublish() {
-        showPublishStatus('publishing', 'Publishing on Google…');
         google.script.run
           .withSuccessHandler(result => {
-            if (result && result.ok) {
-              showPublishStatus('ok', 'Published on Google.');
-              setTimeout(() => clearPublishStatus(), 1500);
-            } else {
-              const msg = result ? (result.error || 'unknown') : 'no result';
-              const code = result && result.code ? ' (HTTP ' + result.code + ')' : '';
-              showPublishStatus('error', 'Could not publish' + code + ': ' + msg);
-              console.error('publishActiveForm result:', result);
-            }
+            if (result && result.ok) return;
+            const msg = result ? (result.error || 'unknown') : 'no result';
+            const code = result && result.code ? ' (HTTP ' + result.code + ')' : '';
+            showPublishStatus('error', 'Could not publish' + code + ': ' + msg);
+            console.error('publishActiveForm result:', result);
           })
           .withFailureHandler(err => {
             showPublishStatus('error', 'Publish call failed: ' + (err && err.message || err));
@@ -55,12 +50,6 @@
         }
         el.className = 'publish-status publish-status--' + kind;
         el.textContent = message;
-        resizeModal();
-      }
-
-      function clearPublishStatus() {
-        const el = document.getElementById('publish-status');
-        if (el) el.remove();
         resizeModal();
       }
 

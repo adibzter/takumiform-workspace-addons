@@ -205,11 +205,9 @@
   .error { color: var(--tk-danger); }
   .refresh { margin-top: 14px; text-align: center; }
 
-  /* Inline status banner — surfaces the auto-publish result at the top
-     of the modal. Three states: publishing (subtle), ok (green, fades),
-     error (amber, persists so the user can read what went wrong). */
+  /* Inline error banner — surfaces auto-publish failures at the top
+     of the modal. Success is silent; the modal's own loading/connected
+     state already signals everything is fine. */
   .publish-status { font-size: 12px; padding: 8px 12px; border-radius: 6px; margin-bottom: 14px; line-height: 1.4; }
-  .publish-status--publishing { background: var(--tk-surface); color: var(--tk-text-subtle); }
-  .publish-status--ok { background: var(--tk-ok-bg); color: var(--tk-ok); }
   .publish-status--error { background: var(--tk-warn-bg); color: var(--tk-warn); word-break: break-word; }
 </style>
