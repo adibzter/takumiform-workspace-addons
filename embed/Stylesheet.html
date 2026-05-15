@@ -1,0 +1,166 @@
+<!--
+  TakumiForm sidebar standard.
+
+  This file is intentionally a near-duplicate across every add-on so each
+  one ships standalone (see ../CLAUDE.md: "Copy-paste between add-ons is
+  fine for now"). When you tweak this file, copy the change to every
+  sibling — there is no shared package by design.
+
+  See ../STYLEGUIDE.md for the component vocabulary, when to use each
+  class, and the design intent behind these choices.
+
+  Used by Sidebar.html via:
+    <?!= include('Stylesheet') ?>
+  which requires the include() helper in Code.js and templated rendering
+  via HtmlService.createTemplateFromFile(...).evaluate().
+-->
+<style>
+  /* Tokens. Brand color is TakumiForm indigo (matches takumiform.com).
+     Neutrals match Google's Forms editor palette so the sidebar feels
+     native to the surrounding UI. Status colors are Google's so success
+     and warning read the way Forms users already expect. */
+  :root {
+    /* Brand */
+    --tk-brand:       #4f46e5;
+    --tk-brand-hover: #4338ca;
+    --tk-brand-soft:  #eef2ff;
+
+    /* Ink — neutrals from Google's Forms palette */
+    --tk-text:        #202124;
+    --tk-text-muted:  #3c4043;
+    --tk-text-subtle: #5f6368;
+    --tk-border:      #dadce0;
+    --tk-divider:     #e8eaed;
+    --tk-surface:     #f8f9fa;
+    --tk-surface-2:   #f1f3f4;
+
+    /* Status */
+    --tk-ok:        #137333;
+    --tk-ok-bg:     #e6f4ea;
+    --tk-warn:      #b06000;
+    --tk-warn-bg:   #fef7e0;
+    --tk-danger:    #c5221f;
+
+    /* Shape */
+    --tk-radius-btn:   8px;
+    --tk-radius-input: 6px;
+    --tk-radius-pill:  999px;
+  }
+
+  /* Body — Google Sans matches the surrounding Forms editor type. Don't
+     swap to a custom font; the sidebar feels alien if you do. */
+  body {
+    font-family: 'Google Sans', Roboto, Arial, sans-serif;
+    margin: 0;
+    padding: 16px;
+    color: var(--tk-text);
+  }
+
+  /* Type. */
+  .title { font-size: 16px; font-weight: 500; margin: 0 0 6px; line-height: 1.3; }
+  .lead  { font-size: 13px; line-height: 1.5; color: var(--tk-text-muted); margin: 0 0 14px; }
+  .label { font-size: 11px; font-weight: 500; color: var(--tk-text-subtle); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 6px; }
+  .hint  { font-size: 12px; line-height: 1.45; color: var(--tk-text-subtle); margin: 0 0 18px; }
+
+  /* Badge — small status pill at top of the sidebar. */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: var(--tk-radius-pill);
+    margin-bottom: 18px;
+  }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge.ok { background: var(--tk-ok-bg);   color: var(--tk-ok); }
+  .badge.no { background: var(--tk-warn-bg); color: var(--tk-warn); }
+
+  /* Buttons. Default = secondary (white surface, brand text). Add
+     `.primary` for the main action. Side-by-side rows use `.row`. */
+  .btn {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: var(--tk-radius-btn);
+    text-decoration: none;
+    cursor: pointer;
+    text-align: center;
+    border: 1px solid var(--tk-border);
+    background: #fff;
+    color: var(--tk-brand);
+  }
+  .btn.primary {
+    background: var(--tk-brand);
+    color: #fff;
+    border-color: var(--tk-brand);
+  }
+  .btn.primary:hover { background: var(--tk-brand-hover); border-color: var(--tk-brand-hover); }
+  .btn + .btn { margin-top: 8px; }
+
+  .row { display: flex; gap: 8px; margin-bottom: 4px; }
+  .row .btn { flex: 1; padding: 8px 10px; font-size: 13px; }
+
+  /* Snippet box — copy-paste code blob with a Copy button overlay. */
+  .snippet { position: relative; margin-bottom: 12px; }
+  .snippet textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: 'Roboto Mono', Menlo, monospace;
+    font-size: 12px;
+    padding: 10px 10px 34px;
+    border: 1px solid var(--tk-border);
+    border-radius: var(--tk-radius-input);
+    background: var(--tk-surface);
+    resize: none;
+    color: var(--tk-text);
+    line-height: 1.4;
+  }
+  .copy {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border: 1px solid var(--tk-border);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--tk-brand);
+    cursor: pointer;
+  }
+  .copy:hover { background: var(--tk-surface-2); }
+  .copy.copied { color: var(--tk-ok); border-color: var(--tk-ok); }
+
+  /* Inline link styled as a button (used by "Refresh status", etc). */
+  .link {
+    font-size: 12px;
+    color: var(--tk-brand);
+    cursor: pointer;
+    text-decoration: underline;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+
+  /* "Synced X ago" line + secondary inline actions. */
+  .freshness { font-size: 12px; line-height: 1.4; color: var(--tk-text-subtle); margin: 0 0 18px; }
+  .freshness a, .freshness .link { color: var(--tk-brand); text-decoration: none; }
+  .freshness a:hover, .freshness .link:hover { text-decoration: underline; }
+  .freshness .dot { margin: 0 6px; color: var(--tk-border); }
+
+  /* Collapsible secondary sections. */
+  details { margin-top: 18px; border-top: 1px solid var(--tk-divider); padding-top: 14px; }
+  summary { font-size: 12px; color: var(--tk-text-subtle); cursor: pointer; outline: none; user-select: none; }
+  summary:hover { color: var(--tk-text); }
+  details[open] summary { margin-bottom: 10px; }
+
+  /* Loading / error / centered footer-action layouts. */
+  .loading, .error { font-size: 13px; color: var(--tk-text-subtle); padding: 32px 8px; text-align: center; }
+  .error { color: var(--tk-danger); }
+  .refresh { margin-top: 14px; text-align: center; }
+</style>

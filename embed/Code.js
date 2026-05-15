@@ -16,9 +16,17 @@ function onInstall(e) {
 }
 
 function showSidebar() {
-  const ui = HtmlService.createHtmlOutputFromFile('Sidebar')
+  const ui = HtmlService.createTemplateFromFile('Sidebar')
+    .evaluate()
     .setTitle('TakumiForm — Embed');
   FormApp.getUi().showSidebar(ui);
+}
+
+// Used by Sidebar.html via `<?!= include('Stylesheet') ?>` to inline the
+// shared sidebar CSS at render time. Keeps Stylesheet.html as a single
+// source of truth for the add-on's design tokens and component styles.
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 // Single data fetch for the sidebar UI. Also checks whether the form is
