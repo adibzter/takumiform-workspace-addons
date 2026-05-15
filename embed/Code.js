@@ -20,10 +20,13 @@ function onInstall(e) {
 // then closes it. Persistence-while-editing (sidebar's main advantage)
 // isn't useful here. See ../STYLEGUIDE.md for the broader rationale.
 function showModal() {
+  // 560×500 fits both states (welcome + connected) without extra
+  // bottom whitespace. Apps Script can't resize after open, so we
+  // pick one size that works for both.
   const html = HtmlService.createTemplateFromFile('Modal')
     .evaluate()
     .setWidth(560)
-    .setHeight(560);
+    .setHeight(500);
   FormApp.getUi().showModalDialog(html, 'TakumiForm — Embed');
 }
 

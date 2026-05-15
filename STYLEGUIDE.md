@@ -154,17 +154,21 @@ For low-emphasis actions that aren't full buttons ("Refresh status", "I've conne
 <button class="link" id="refresh">Refresh status</button>
 ```
 
-### Freshness line
+### Status row
 
-For "Synced X ago" with inline secondary actions.
+Badge + meta line on a single wrapping row. Use as the header of a connected/active state — badge tells the user what state they're in, meta line offers actions inline.
 
 ```html
-<p class="freshness">
-  Synced 2 min ago.
-  <a href="..." target="_blank">Sync now</a>
-  <span class="dot">·</span>
-  <button class="link">Refresh status</button>
-</p>
+<div class="status-row">
+  <span class="badge ok">Connected</span>
+  <span class="status-meta">
+    Synced 2 min ago
+    <span class="dot">·</span>
+    <a href="..." target="_blank">Sync now</a>
+    <span class="dot">·</span>
+    <button class="link">Refresh</button>
+  </span>
+</div>
 ```
 
 ### Collapsible section

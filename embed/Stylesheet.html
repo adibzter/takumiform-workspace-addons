@@ -132,8 +132,11 @@
   .btn.primary:hover { background: var(--tk-brand-hover); border-color: var(--tk-brand-hover); }
   .btn + .btn { margin-top: 8px; }
 
-  .row { display: flex; gap: 8px; margin-bottom: 4px; }
-  .row .btn { flex: 1; padding: 8px 10px; font-size: 13px; }
+  /* Inline action row — buttons sit at their natural width with a gap.
+     Use for secondary actions that follow content (e.g. Preview · Customize
+     under the snippet). */
+  .row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+  .row .btn { display: inline-block; width: auto; padding: 8px 14px; font-size: 13px; }
 
   /* Snippet box — copy-paste code blob with a Copy button overlay. */
   .snippet { position: relative; margin-bottom: 12px; }
@@ -177,11 +180,20 @@
     padding: 0;
   }
 
-  /* "Synced X ago" line + secondary inline actions. */
-  .freshness { font-size: 12px; line-height: 1.4; color: var(--tk-text-subtle); margin: 0 0 18px; }
-  .freshness a, .freshness .link { color: var(--tk-brand); text-decoration: none; }
-  .freshness a:hover, .freshness .link:hover { text-decoration: underline; }
-  .freshness .dot { margin: 0 6px; color: var(--tk-border); }
+  /* Status header — badge on the left, "Synced X · Sync now · Refresh"
+     on the right. Wraps cleanly on narrow widths. */
+  .status-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    margin-bottom: 18px;
+  }
+  .status-row .badge { margin-bottom: 0; } /* override the default 18px */
+  .status-meta { font-size: 12px; line-height: 1.4; color: var(--tk-text-subtle); }
+  .status-meta a, .status-meta .link { color: var(--tk-brand); text-decoration: none; }
+  .status-meta a:hover, .status-meta .link:hover { text-decoration: underline; }
+  .status-meta .dot { margin: 0 6px; color: var(--tk-border); }
 
   /* Collapsible secondary sections. */
   details { margin-top: 18px; border-top: 1px solid var(--tk-divider); padding-top: 14px; }

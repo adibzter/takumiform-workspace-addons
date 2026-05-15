@@ -75,31 +75,34 @@
         `;
       }
 
+      // Connected state. Modal title bar already says "TakumiForm —
+      // Embed" so we don't repeat the form name; lead with status, then
+      // the snippet (the thing the user came for), then secondary actions.
       function renderConnected(d) {
         const synced = d.updatedAt ? syncedAgo(d.updatedAt) : null;
         return `
-          <p class="title">${escapeHtml(d.title)}</p>
-          <span class="badge ok">Connected</span>
-
-          ${synced ? `
-            <p class="freshness">
-              Synced ${escapeHtml(synced)}.
-              <a href="${escapeHtml(d.syncUrl)}" target="_blank">Sync now</a>
-              <span class="dot">·</span>
-              <button class="link" id="refresh">Refresh status</button>
-            </p>
-          ` : ''}
+          <div class="status-row">
+            <span class="badge ok">Connected</span>
+            ${synced ? `
+              <span class="status-meta">
+                Synced ${escapeHtml(synced)}
+                <span class="dot">·</span>
+                <a href="${escapeHtml(d.syncUrl)}" target="_blank">Sync now</a>
+                <span class="dot">·</span>
+                <button class="link" id="refresh">Refresh</button>
+              </span>
+            ` : ''}
+          </div>
 
           <p class="label">Embed snippet</p>
           ${snippetBox('s1', d.script)}
           <p class="hint">
-            Paste this anywhere on your site. Works in WordPress, Webflow,
-            Squarespace, Framer, plain HTML.
+            Paste this anywhere on your site. Works in WordPress, Webflow, Squarespace, Framer, plain HTML.
           </p>
 
           <div class="row">
             <a class="btn" href="${escapeHtml(d.previewUrl)}" target="_blank">Preview</a>
-            <a class="btn" href="${escapeHtml(d.connectUrl)}" target="_blank">Open dashboard</a>
+            <a class="btn" href="${escapeHtml(d.connectUrl)}" target="_blank">Customize</a>
           </div>
 
           <details>
