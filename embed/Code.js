@@ -44,7 +44,10 @@ function getEmbedData() {
     updatedAt: status.updatedAt || null,
     script: scriptSnippet(formId),
     iframe: iframeSnippet(formId),
-    connectUrl: connectUrl(formId),
+    // Both URL variants — sidebar JS picks one based on the auto-publish
+    // checkbox on the welcome screen, no extra server round-trip needed.
+    connectUrl: connectUrl(formId, false),
+    connectAndPublishUrl: connectUrl(formId, true),
     syncUrl: syncUrl(formId),
     previewUrl: previewUrl(formId)
   };

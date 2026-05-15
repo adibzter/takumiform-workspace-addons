@@ -28,17 +28,47 @@
         wireUp();
       }
 
+      // Welcome / disconnected state. First thing every new user sees —
+      // it's the entire pitch in one screen. Lead with the value prop,
+      // not the form's title or a "not connected" label. Keep the
+      // checklist short; long lists get skimmed past.
+      //
+      // The auto-publish checkbox swaps the Connect button's href
+      // between /app?form=...&publish=1 and the bare variant — the web
+      // app reads the flag during import and calls Forms setPublishSettings.
+      // Defaults checked because the renderer refuses unpublished forms;
+      // leaving it unchecked means the user has to hit Publish on Google
+      // separately before the embed will render.
       function renderDisconnected(d) {
         return `
-          <p class="title">${escapeHtml(d.title)}</p>
-          <span class="badge no">Not connected</span>
+          <p class="welcome-title">Embed this form on your site</p>
           <p class="lead">
-            Connect this form to TakumiForm to get a copy-paste embed snippet
-            that works on any website.
+            Connect once. Paste a snippet. Done.
           </p>
-          <a class="btn primary" href="${escapeHtml(d.connectUrl)}" target="_blank">
+
+          <ul class="checklist">
+            <li>Works on Webflow, WordPress, plain HTML</li>
+            <li>Match your site's colors, fonts, logo</li>
+            <li>Drop the Google watermark</li>
+            <li>Auto-syncs when you edit the form</li>
+          </ul>
+
+          <label class="checkbox">
+            <input type="checkbox" id="auto-publish" checked />
+            <span>Also publish my form on Google so anyone with the link can respond.</span>
+          </label>
+
+          <a class="btn primary" id="connect-btn"
+            href="${escapeHtml(d.connectAndPublishUrl)}"
+            data-connect-url="${escapeHtml(d.connectUrl)}"
+            data-connect-publish-url="${escapeHtml(d.connectAndPublishUrl)}"
+            target="_blank">
             Connect to TakumiForm
           </a>
+          <p class="footnote">
+            Free for 100 responses/mo. No card.
+          </p>
+
           <div class="refresh">
             <button class="link" id="refresh">I've connected — refresh</button>
           </div>
@@ -125,6 +155,18 @@
 
         const refresh = document.getElementById('refresh');
         if (refresh) refresh.addEventListener('click', load);
+
+        // Auto-publish checkbox on the welcome screen swaps the Connect
+        // button's href between the publish and no-publish variants.
+        const autoPublish = document.getElementById('auto-publish');
+        const connectBtn = document.getElementById('connect-btn');
+        if (autoPublish && connectBtn) {
+          autoPublish.addEventListener('change', () => {
+            connectBtn.href = autoPublish.checked
+              ? connectBtn.dataset.connectPublishUrl
+              : connectBtn.dataset.connectUrl;
+          });
+        }
       }
 
       function escapeHtml(s) {

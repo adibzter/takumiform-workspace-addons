@@ -51,18 +51,34 @@ Every add-on's sidebar should compose from this vocabulary. If you find yourself
 ### Type
 
 ```html
+<p class="welcome-title">Embed this form on your site</p>
 <p class="title">Form name</p>
 <p class="lead">One-line description of what the add-on does for this form.</p>
 <p class="label">Section label</p>
 <p class="hint">Small helper text under inputs/snippets.</p>
+<p class="footnote">Free for 100 responses/mo. No card.</p>
 ```
 
 | Class | Use for |
 | --- | --- |
-| `.title` | Sidebar header — usually the form's title |
+| `.welcome-title` | Big heading on the welcome / disconnected state. Lead with the value prop, not the form's name |
+| `.title` | Connected-state header — the form's title |
 | `.lead` | Intro paragraph below the title |
 | `.label` | Uppercase tracking-wide section labels |
 | `.hint` | 12px helper copy under controls |
+| `.footnote` | Centered 11px text under a primary action (e.g. pricing reassurance) |
+
+### Checklist
+
+Short list of benefits with brand-colored checkmarks. Use on welcome screens. Keep it to 3–5 items — longer lists get skimmed.
+
+```html
+<ul class="checklist">
+  <li>Works on any site</li>
+  <li>Match your colors and fonts</li>
+  <li>Auto-syncs when you edit the form</li>
+</ul>
+```
 
 ### Badge
 
@@ -77,6 +93,17 @@ Status pill with a colored dot. Goes near the top of the sidebar to telegraph st
 | --- | --- |
 | `.ok` | Connected, synced, published, working |
 | `.no` | Disconnected, action needed |
+
+### Checkbox
+
+Opt-in toggle. Label wraps the input so the entire line is clickable. Use sparingly — sidebars don't have room for many of these. Good for one default-checked option above a primary button (e.g. "Also publish my form").
+
+```html
+<label class="checkbox">
+  <input type="checkbox" id="auto-publish" checked />
+  <span>Also publish my form on Google so anyone with the link can respond.</span>
+</label>
+```
 
 ### Button
 
