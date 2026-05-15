@@ -10,7 +10,59 @@
     <script>
       const root = document.getElementById('root');
 
+      // Two parallel calls on modal open:
+      // 1. load() fetches connection status so we can render the right state
+      // 2. autoPublish() publishes the form on Google in the background
+      //
+      // Auto-publish is intentional and unconditional — installing the
+      // embed add-on means the user wants the form embeddable, which
+      // requires it being published. The API call is idempotent, so
+      // re-opening the modal on an already-published form is a no-op.
       load();
+      autoPublish();
+
+      // Auto-publish — fires on every modal open. Result is surfaced
+      // in a small banner at the top of the modal so failures aren't
+      // silent (they were before — only `withFailureHandler` was wired,
+      // which fires on exception, not on `{ok: false}` results).
+      function autoPublish() {
+        showPublishStatus('publishing', 'Publishing on Google…');
+        google.script.run
+          .withSuccessHandler(result => {
+            if (result && result.ok) {
+              showPublishStatus('ok', 'Published on Google.');
+              setTimeout(() => clearPublishStatus(), 1500);
+            } else {
+              const msg = result ? (result.error || 'unknown') : 'no result';
+              const code = result && result.code ? ' (HTTP ' + result.code + ')' : '';
+              showPublishStatus('error', 'Could not publish' + code + ': ' + msg);
+              console.error('publishActiveForm result:', result);
+            }
+          })
+          .withFailureHandler(err => {
+            showPublishStatus('error', 'Publish call failed: ' + (err && err.message || err));
+            console.error('publishActiveForm exception:', err);
+          })
+          .publishActiveForm();
+      }
+
+      function showPublishStatus(kind, message) {
+        let el = document.getElementById('publish-status');
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'publish-status';
+          document.body.insertBefore(el, document.body.firstChild);
+        }
+        el.className = 'publish-status publish-status--' + kind;
+        el.textContent = message;
+        resizeModal();
+      }
+
+      function clearPublishStatus() {
+        const el = document.getElementById('publish-status');
+        if (el) el.remove();
+        resizeModal();
+      }
 
       function load() {
         root.innerHTML = '<div class="loading">Loading…</div>';
@@ -45,12 +97,9 @@
       // not the form's title or a "not connected" label. Keep the
       // checklist short; long lists get skimmed past.
       //
-      // The auto-publish checkbox swaps the Connect button's href
-      // between /app?form=...&publish=1 and the bare variant — the web
-      // app reads the flag during import and calls Forms setPublishSettings.
-      // Defaults checked because the renderer refuses unpublished forms;
-      // leaving it unchecked means the user has to hit Publish on Google
-      // separately before the embed will render.
+      // Publishing happens silently in the background (see autoPublish
+      // above) — the user installed the embed add-on, which implies they
+      // want the form embeddable, which requires it to be published.
       function renderDisconnected(d) {
         return `
           <p class="welcome-title">Embed this form on your site</p>
@@ -65,14 +114,7 @@
             <li>Auto-syncs when you edit the form</li>
           </ul>
 
-          <label class="checkbox">
-            <input type="checkbox" id="auto-publish" checked />
-            <span>Also publish my form on Google so anyone with the link can respond.</span>
-          </label>
-
-          <a class="btn primary" id="connect-btn"
-            href="${escapeHtml(d.connectUrl)}"
-            target="_blank">
+          <a class="btn primary" id="connect-btn" href="${escapeHtml(d.connectUrl)}" target="_blank">
             Connect to TakumiForm
           </a>
           <p class="footnote">
@@ -172,27 +214,6 @@
         document.querySelectorAll('details').forEach(d => {
           d.addEventListener('toggle', resizeModal);
         });
-
-        // Auto-publish — fires in parallel with the Connect anchor's
-        // native new-tab navigation. We deliberately DON'T preventDefault
-        // because google.script.run is async and any deferred window.open
-        // would be blocked by popup heuristics.
-        //
-        // The publish call uses the add-on's forms.body scope and the
-        // script's own OAuth token (see publishActiveForm in Code.js).
-        // No backend round-trip needed — the user's add-on session
-        // already has the permission. By the time they sign in to the
-        // web app and land on /app, their form is already published.
-        const autoPublish = document.getElementById('auto-publish');
-        const connectBtn = document.getElementById('connect-btn');
-        if (autoPublish && connectBtn) {
-          connectBtn.addEventListener('click', () => {
-            if (!autoPublish.checked) return;
-            google.script.run
-              .withFailureHandler(err => console.warn('Auto-publish failed:', err && err.message))
-              .publishActiveForm();
-          });
-        }
       }
 
       function escapeHtml(s) {

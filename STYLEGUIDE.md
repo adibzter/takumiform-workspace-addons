@@ -107,17 +107,6 @@ Status pill with a colored dot. Goes near the top of the modal to telegraph stat
 | `.ok` | Connected, synced, published, working |
 | `.no` | Disconnected, action needed |
 
-### Checkbox
-
-Opt-in toggle. Label wraps the input so the entire line is clickable. Use sparingly — one default-checked option above a primary button is the canonical use (e.g. "Also publish my form").
-
-```html
-<label class="checkbox">
-  <input type="checkbox" id="auto-publish" checked />
-  <span>Also publish my form on Google so anyone with the link can respond.</span>
-</label>
-```
-
 ### Button
 
 ```html

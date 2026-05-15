@@ -58,19 +58,22 @@ function getEmbedData() {
   };
 }
 
-// Publishes the active form using the 2024 publish workflow. Apps
-// Script's FormApp class doesn't expose this — it's REST-only — so we
-// call setPublishSettings directly with the script's OAuth token.
+// Publishes the active form using the 2024 Forms publish workflow.
+// Apps Script's FormApp class doesn't expose this — it's REST-only —
+// so we call setPublishSettings directly with the script's OAuth token.
 //
 // Requires `forms.body` in appsscript.json (forms.currentonly alone
 // scopes FormApp access, not REST). The user is already an editor of
-// the form (otherwise FormApp.getActiveForm() wouldn't have given us
-// the form), so we don't need to add ourselves as editor — the OAuth
-// token acts as them.
+// the form (otherwise FormApp.getActiveForm() wouldn't have returned
+// it), so we don't need to add ourselves as editor — the OAuth token
+// acts as them.
 //
-// Called from Modal.html on Connect click when the auto-publish
-// checkbox is on. Returns {ok: true} on success, {ok: false, error}
-// on failure so the client can surface the issue.
+// Fires on modal open from Modal.html so the form is published by the
+// time the user lands on the dashboard. Idempotent: re-opening on an
+// already-published form is a cheap no-op on the API side.
+//
+// Returns {ok: true, code} on success, {ok: false, code?, error} on
+// failure so the client can surface the issue inline.
 function publishActiveForm() {
   try {
     const form = FormApp.getActiveForm();
@@ -90,9 +93,12 @@ function publishActiveForm() {
       }
     );
     const code = res.getResponseCode();
-    if (code >= 200 && code < 300) return { ok: true };
-    return { ok: false, error: 'API ' + code + ': ' + res.getContentText().slice(0, 200) };
+    if (code >= 200 && code < 300) return { ok: true, code: code };
+    const body = res.getContentText();
+    Logger.log('publishActiveForm failed: code=' + code + ' body=' + body.slice(0, 500));
+    return { ok: false, code: code, error: body.slice(0, 500) };
   } catch (e) {
+    Logger.log('publishActiveForm exception: ' + e.message);
     return { ok: false, error: e.message };
   }
 }

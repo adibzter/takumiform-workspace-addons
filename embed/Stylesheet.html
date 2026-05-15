@@ -93,20 +93,6 @@
   .badge.ok { background: var(--tk-ok-bg);   color: var(--tk-ok); }
   .badge.no { background: var(--tk-warn-bg); color: var(--tk-warn); }
 
-  /* Checkbox row — opt-in toggles on welcome / settings screens. The
-     label wraps the input so the entire line is clickable. */
-  .checkbox {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    font-size: 12px;
-    line-height: 1.45;
-    color: var(--tk-text-muted);
-    cursor: pointer;
-    margin-bottom: 14px;
-  }
-  .checkbox input { margin-top: 2px; flex-shrink: 0; accent-color: var(--tk-brand); }
-
   /* Buttons. Default = secondary (white surface, brand text). Add
      `.primary` for the main action. Side-by-side rows use `.row`. */
   .btn {
@@ -215,4 +201,12 @@
   .loading, .error { font-size: 13px; color: var(--tk-text-subtle); padding: 32px 8px; text-align: center; }
   .error { color: var(--tk-danger); }
   .refresh { margin-top: 14px; text-align: center; }
+
+  /* Inline status banner — surfaces the auto-publish result at the top
+     of the modal. Three states: publishing (subtle), ok (green, fades),
+     error (amber, persists so the user can read what went wrong). */
+  .publish-status { font-size: 12px; padding: 8px 12px; border-radius: 6px; margin-bottom: 14px; line-height: 1.4; }
+  .publish-status--publishing { background: var(--tk-surface); color: var(--tk-text-subtle); }
+  .publish-status--ok { background: var(--tk-ok-bg); color: var(--tk-ok); }
+  .publish-status--error { background: var(--tk-warn-bg); color: var(--tk-warn); word-break: break-word; }
 </style>
