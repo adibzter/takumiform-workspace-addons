@@ -35,18 +35,20 @@ If we share a stylesheet across hosts, every UI tweak risks clobbering an unrela
 
 Defined in `Stylesheet.html` as CSS variables. Use them via `var(--tk-*)`; never hard-code a hex.
 
-```
---tk-brand        #4f46e5   primary action, links inside the modal
---tk-brand-hover  #4338ca   hover state for primary buttons
---tk-brand-soft   #eef2ff   reserved for tints (badges, subtle fills)
+Palette is TakumiForm vermillion (朱 / shu) on warm stone — same direction as the web app, so the add-on feels like part of the product instead of a generic Forms plugin. The web app's equivalent tokens live in `../takumiform/src/styles/global.css`; keep the two in sync if you ever shift the brand.
 
---tk-text         #202124   primary text — matches Forms editor
---tk-text-muted   #3c4043   body copy, secondary statements
---tk-text-subtle  #5f6368   labels, hints, meta lines
---tk-border       #dadce0   form controls, button borders
---tk-divider      #e8eaed   horizontal rules between sections
---tk-surface      #f8f9fa   snippet/textarea background
---tk-surface-2    #f1f3f4   button hover surface
+```
+--tk-brand        #b91d2d   primary action, links inside the modal (vermillion)
+--tk-brand-hover  #951725   hover state for primary buttons
+--tk-brand-soft   #fdf3f1   reserved for tints (badges, subtle fills)
+
+--tk-text         #1c1917   primary text — warm stone-900
+--tk-text-muted   #44403c   body copy, secondary statements
+--tk-text-subtle  #78716c   labels, hints, meta lines
+--tk-border       #d6d3d1   form controls, button borders
+--tk-divider      #e7e5e4   horizontal rules between sections
+--tk-surface      #fafaf9   snippet/textarea background
+--tk-surface-2    #f5f5f4   button hover surface
 
 --tk-ok / --tk-ok-bg          green — connected/synced
 --tk-warn / --tk-warn-bg      amber — disconnected/unpublished
