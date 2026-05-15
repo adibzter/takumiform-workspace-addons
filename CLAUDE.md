@@ -2,6 +2,8 @@
 
 Five Google Forms add-ons, one per Marketplace listing keyword (customize, embed, file-upload, payments, quiz-scoring). They are the **install funnel and editor entry point** for TakumiForm — they don't hold product state. Real customization, response handling, and payments live on `takumiform.com` (sibling repo at [../takumiform/](../takumiform/), see its [ARCHITECTURE.md](../takumiform/ARCHITECTURE.md)).
 
+Responses still land in the user's native Google Forms responses tab (and linked Sheet) — when someone submits via the takumiform-rendered form or its embed, the takumiform backend forwards the answers to Google Forms' public `formResponse` URL on the owner's behalf. From the form-owner's perspective, the add-on never has to ask for write access to responses, and nothing in this repo handles submissions.
+
 ## Why one add-on per keyword
 
 Formfacade has 6+ Marketplace listings, one per SEO term ("customize", "embed", "file upload", etc.). Each listing ranks for its own keyword in the Workspace Marketplace search. We're mirroring that strategy with five listings. All five point users back to the same takumiform.com account.
