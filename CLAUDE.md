@@ -35,24 +35,26 @@ Editor add-on entry points:
 ```
 <addon>/
 ├── appsscript.json     manifest — scopes only, no addOns block
-├── Code.js             onOpen, onInstall, showSidebar, include() helper, server endpoints for google.script.run
+├── Code.js             onOpen, onInstall, showModal, include() helper, server endpoints for google.script.run
 ├── Snippets.js         pure helpers (string builders, URL formatters) — easy to read and test
-├── Sidebar.html        the sidebar UI (HTML + inline JS) — pulls shared CSS via <?!= include('Stylesheet') ?>
-├── Stylesheet.html     shared sidebar CSS — see ../STYLEGUIDE.md (deliberate near-duplicate per add-on)
+├── Modal.html          the add-on UI (HTML + inline JS) — pulls shared CSS via <?!= include('Stylesheet') ?>
+├── Stylesheet.html     shared CSS — see ../STYLEGUIDE.md (deliberate near-duplicate per add-on)
 └── .clasp.json         scriptId — gitignored, copy from .clasp.json.example
 ```
 
-## Sidebar standard
+## UI standard
 
-Every add-on's sidebar uses the same tokens, components, and copy patterns so the five Marketplace listings feel like one product. The standard lives in [STYLEGUIDE.md](STYLEGUIDE.md) — read it before building a new sidebar.
+Every add-on uses the same tokens, components, layout container, and copy patterns so the five Marketplace listings feel like one product. The standard lives in [STYLEGUIDE.md](STYLEGUIDE.md) — read it before building a new add-on.
 
-The shared CSS ships as `Stylesheet.html` in each add-on (a deliberate copy, not an import). Sidebar.html includes it via Apps Script templating:
+**Container is a modal**, not a sidebar. The user opens the add-on briefly to do one thing (grab snippet, hit sync, configure) then closes it. Modal commands attention on first run and gives more room than the ~300px sidebar. Trade-off documented in STYLEGUIDE.md.
+
+The shared CSS ships as `Stylesheet.html` in each add-on (a deliberate copy, not an import). Modal.html includes it via Apps Script templating:
 
 ```html
 <?!= include('Stylesheet') ?>
 ```
 
-This requires `showSidebar()` to use `createTemplateFromFile(...).evaluate()` and an `include()` helper in Code.js — copy both from [embed/Code.js](embed/Code.js) when you set up a new add-on.
+This requires `showModal()` to use `createTemplateFromFile(...).evaluate()` and an `include()` helper in Code.js — copy both from [embed/Code.js](embed/Code.js) when you set up a new add-on.
 
 ## Working on an add-on
 

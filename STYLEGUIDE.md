@@ -1,20 +1,33 @@
-# TakumiForm Sidebar Standard
+# TakumiForm Add-on UI Standard
 
 The visual + interaction standard every TakumiForm Workspace add-on follows. Five add-ons, one feel.
 
 The standard lives as `Stylesheet.html` in each add-on (a deliberate near-duplicate per [CLAUDE.md](CLAUDE.md)'s "copy-paste between add-ons is fine" rule). When you tweak it, copy the change to every sibling — there's no shared package, by design.
 
-For the dashboard / marketing site equivalent, see [../takumiform/CLAUDE.md](../takumiform/CLAUDE.md) → "Layouts and design system." The two systems are deliberately separate:
+## Container: modal, not sidebar
+
+We use **modal dialogs** (`FormApp.getUi().showModalDialog`), not sidebars. Reasoning:
+
+- The user opens the add-on briefly (grab snippet, hit sync, leave) — sidebar's "persists alongside the form" advantage isn't useful for this job.
+- Modal commands attention on first run, which matters most when we're trying to convert.
+- More room than the ~300px sidebar — snippet textarea isn't cramped, layouts breathe.
+- One container = one mental model. No "where did the welcome go?" moment.
+
+Default dimensions: `setWidth(560).setHeight(560)`. Adjust per add-on if a use case genuinely needs more.
+
+If a future add-on truly needs the user to see UI *while* editing the form (e.g. live response counter), introduce a sidebar at that point. Don't pay for both up-front.
+
+For the dashboard / marketing site equivalent, see [../takumiform/CLAUDE.md](../takumiform/CLAUDE.md) → "Layouts and design system." The systems are deliberately separate:
 
 | | Where it lives | What sets the feel | Owner |
 | --- | --- | --- | --- |
-| **Sidebar standard** (this doc) | `<addon>/Stylesheet.html` | TakumiForm brand color + Google's neutrals + Google Sans | Us |
+| **Add-on UI** (this doc) | `<addon>/Stylesheet.html` | TakumiForm brand color + Google's neutrals + Google Sans | Us |
 | **Dashboard / marketing** | `src/styles/global.css` `@theme` | Tailwind tokens (`--color-brand-*`, `--color-ink-*`) | Us |
 | **Public form renderer** | `src/features/customize/theme.ts` (`--tk-*`) | Per-form, owner-controlled | End users |
 
 ## Why separate?
 
-Each system runs in a different host. The sidebar runs *inside* Google's Forms editor — using Google's neutrals + typography keeps it from feeling like an alien plugin. The dashboard runs on its own domain — it should feel fully TakumiForm. The form renderer is whatever the form owner says it is.
+Each system runs in a different host. The add-on modal runs *inside* Google's Forms editor — using Google's neutrals + typography keeps it from feeling like an alien plugin. The dashboard runs on its own domain — it should feel fully TakumiForm. The form renderer is whatever the form owner says it is.
 
 If we share a stylesheet across hosts, every UI tweak risks clobbering an unrelated surface. Each host owns its tokens.
 
@@ -23,7 +36,7 @@ If we share a stylesheet across hosts, every UI tweak risks clobbering an unrela
 Defined in `Stylesheet.html` as CSS variables. Use them via `var(--tk-*)`; never hard-code a hex.
 
 ```
---tk-brand        #4f46e5   primary action, links inside the sidebar
+--tk-brand        #4f46e5   primary action, links inside the modal
 --tk-brand-hover  #4338ca   hover state for primary buttons
 --tk-brand-soft   #eef2ff   reserved for tints (badges, subtle fills)
 
@@ -46,7 +59,7 @@ Defined in `Stylesheet.html` as CSS variables. Use them via `var(--tk-*)`; never
 
 ## Components
 
-Every add-on's sidebar should compose from this vocabulary. If you find yourself inventing a new class, that's a hint — first check if an existing component fits with one extra modifier. If not, add it to `Stylesheet.html` *and document it here*, then copy the change to every sibling.
+Every add-on's modal should compose from this vocabulary. If you find yourself inventing a new class, that's a hint — first check if an existing component fits with one extra modifier. If not, add it to `Stylesheet.html` *and document it here*, then copy the change to every sibling.
 
 ### Type
 
@@ -82,7 +95,7 @@ Short list of benefits with brand-colored checkmarks. Use on welcome screens. Ke
 
 ### Badge
 
-Status pill with a colored dot. Goes near the top of the sidebar to telegraph state.
+Status pill with a colored dot. Goes near the top of the modal to telegraph state.
 
 ```html
 <span class="badge ok">Connected</span>
@@ -96,7 +109,7 @@ Status pill with a colored dot. Goes near the top of the sidebar to telegraph st
 
 ### Checkbox
 
-Opt-in toggle. Label wraps the input so the entire line is clickable. Use sparingly — sidebars don't have room for many of these. Good for one default-checked option above a primary button (e.g. "Also publish my form").
+Opt-in toggle. Label wraps the input so the entire line is clickable. Use sparingly — one default-checked option above a primary button is the canonical use (e.g. "Also publish my form").
 
 ```html
 <label class="checkbox">
@@ -131,7 +144,7 @@ Code blob with a Copy button overlay.
 </div>
 ```
 
-JS lives in the page; toggling `.copied` flips the button to a green "Copied" state for 1.5s. Pattern is identical across add-ons — copy the wireup function from `embed/Sidebar.html`.
+JS lives in the page; toggling `.copied` flips the button to a green "Copied" state for 1.5s. Pattern is identical across add-ons — copy the wireup function from `embed/Modal.html`.
 
 ### Inline link
 
@@ -180,33 +193,34 @@ Match the project copy guidelines (see `../takumiform/CLAUDE.md`). Specifically:
 
 - **Avoid**: "supercharge", "perfected", "everything X is missing", parallel triplet sentences, em-dashes as a stylistic crutch, fake stats.
 - **Prefer**: one clear sentence, mild opinion, contractions, occasional "yep" / "mostly".
-- **Sidebar voice is short.** You have ~300px of width. Two-line lead, then components.
+- **Modal voice is short.** You have ~560px and the user wants out fast. Two-line lead, then components.
 
 ## Layout
 
 - **Padding**: `body { padding: 16px }` — set by `Stylesheet.html`. Don't override per add-on.
 - **Vertical rhythm**: 14–18px between sections (the components have their own margins; trust them).
-- **Width**: assume ~300px. Don't add horizontal scrolling. Long text wraps; long URLs go in a `.snippet` textarea.
-- **No grids or columns** beyond the `.row` pattern (two side-by-side buttons). Sidebars are vertical lists.
+- **Width**: 560px (modal default). Don't add horizontal scrolling. Long text wraps; long URLs go in a `.snippet` textarea.
+- **No grids or columns** beyond the `.row` pattern (two side-by-side buttons). Modals are vertical stacks.
 
 ## Interaction
 
 - **One primary action per screen.** The user shouldn't have to think about which button is "the" button.
-- **Refresh is always available** when the sidebar shows server-fetched state. Use the `.refresh` block at the bottom or inline `<button class="link" id="refresh">`.
+- **Refresh is always available** when the modal shows server-fetched state. Use the `.refresh` block at the bottom or inline `<button class="link" id="refresh">`.
 - **Loading state for every fetch.** Replace the root with `<div class="loading">Loading…</div>` while waiting.
-- **Errors degrade gracefully.** Show the error in a `.error` block; don't crash the sidebar.
-- **External links open in new tabs.** Sidebars don't navigate (`<base target="_top">` already handles this).
+- **Errors degrade gracefully.** Show the error in a `.error` block; don't crash the modal.
+- **External links open in new tabs.** `<base target="_top">` in the head handles this.
 
 ## Wiring it up
 
 In your add-on's `Code.js`:
 
 ```js
-function showSidebar() {
-  const ui = HtmlService.createTemplateFromFile('Sidebar')
+function showModal() {
+  const html = HtmlService.createTemplateFromFile('Modal')
     .evaluate()
-    .setTitle('TakumiForm — <Add-on>');
-  FormApp.getUi().showSidebar(ui);
+    .setWidth(560)
+    .setHeight(560);
+  FormApp.getUi().showModalDialog(html, 'TakumiForm — <Add-on>');
 }
 
 function include(filename) {
@@ -214,7 +228,7 @@ function include(filename) {
 }
 ```
 
-In your add-on's `Sidebar.html`:
+In your add-on's `Modal.html`:
 
 ```html
 <!DOCTYPE html>
@@ -226,7 +240,7 @@ In your add-on's `Sidebar.html`:
   <body>
     <div id="root"><div class="loading">Loading…</div></div>
     <script>
-      // ...your sidebar logic, using the components above
+      // ...your modal logic, using the components above
     </script>
   </body>
 </html>

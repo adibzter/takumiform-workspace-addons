@@ -113,7 +113,7 @@
       }
 
       // Apps Script gives us a millisecond epoch — format it client-side
-      // so the sidebar matches the dashboard's "Synced X ago" phrasing.
+      // so the modal matches the dashboard's "Synced X ago" phrasing.
       function syncedAgo(ms) {
         const diff = Date.now() - ms;
         const sec = Math.floor(diff / 1000);

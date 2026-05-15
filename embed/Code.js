@@ -7,7 +7,7 @@ const CDN_URL = 'https://dev.takumiform.com/embed.js';
 function onOpen(e) {
   FormApp.getUi()
     .createAddonMenu()
-    .addItem('Get embed code', 'showSidebar')
+    .addItem('Get embed code', 'showModal')
     .addToUi();
 }
 
@@ -15,23 +15,28 @@ function onInstall(e) {
   onOpen(e);
 }
 
-function showSidebar() {
-  const ui = HtmlService.createTemplateFromFile('Sidebar')
+// Modal (not sidebar) — chosen for higher attention on first run and
+// because the user only opens the add-on briefly to grab the snippet,
+// then closes it. Persistence-while-editing (sidebar's main advantage)
+// isn't useful here. See ../STYLEGUIDE.md for the broader rationale.
+function showModal() {
+  const html = HtmlService.createTemplateFromFile('Modal')
     .evaluate()
-    .setTitle('TakumiForm — Embed');
-  FormApp.getUi().showSidebar(ui);
+    .setWidth(560)
+    .setHeight(560);
+  FormApp.getUi().showModalDialog(html, 'TakumiForm — Embed');
 }
 
-// Used by Sidebar.html via `<?!= include('Stylesheet') ?>` to inline the
-// shared sidebar CSS at render time. Keeps Stylesheet.html as a single
-// source of truth for the add-on's design tokens and component styles.
+// Used by Modal.html via `<?!= include('Stylesheet') ?>` to inline the
+// shared CSS at render time. Keeps Stylesheet.html as a single source of
+// truth for the add-on's design tokens and component styles.
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
-// Single data fetch for the sidebar UI. Also checks whether the form is
-// already connected to TakumiForm so the sidebar can render the right
-// state — disconnected (one big "Connect" CTA) or connected (the snippet
+// Single data fetch for the modal UI. Also checks whether the form is
+// already connected to TakumiForm so the modal can render the right
+// state — disconnected (welcome + Connect CTA) or connected (the snippet
 // and supporting actions).
 function getEmbedData() {
   const form = FormApp.getActiveForm();
@@ -44,8 +49,8 @@ function getEmbedData() {
     updatedAt: status.updatedAt || null,
     script: scriptSnippet(formId),
     iframe: iframeSnippet(formId),
-    // Both URL variants — sidebar JS picks one based on the auto-publish
-    // checkbox on the welcome screen, no extra server round-trip needed.
+    // Both URL variants — the welcome modal picks one based on the
+    // auto-publish checkbox, no extra server round-trip needed.
     connectUrl: connectUrl(formId, false),
     connectAndPublishUrl: connectUrl(formId, true),
     syncUrl: syncUrl(formId),
@@ -54,8 +59,8 @@ function getEmbedData() {
 }
 
 // Returns { connected: bool, updatedAt?: number } from our server. Used
-// by the sidebar on load and by the "Refresh" link after the user has
-// connected or synced in a separate tab.
+// on modal load and by the "Refresh" link after the user has connected
+// or synced in a separate tab.
 function fetchStatus(formId) {
   try {
     const res = UrlFetchApp.fetch(statusUrl(formId), { muteHttpExceptions: true });
