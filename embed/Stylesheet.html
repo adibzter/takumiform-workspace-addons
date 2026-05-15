@@ -130,13 +130,23 @@
     border-color: var(--tk-brand);
   }
   .btn.primary:hover { background: var(--tk-brand-hover); border-color: var(--tk-brand-hover); }
-  .btn + .btn { margin-top: 8px; }
 
-  /* Inline action row — buttons sit at their natural width with a gap.
-     Use for secondary actions that follow content (e.g. Preview · Customize
+  /* Inline action row — buttons share a min-width AND fixed line-height
+     so they balance to the same size regardless of label length. Use for
+     secondary actions that follow content (e.g. Preview · Customize
      under the snippet). */
   .row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
-  .row .btn { display: inline-block; width: auto; padding: 8px 14px; font-size: 13px; }
+  .row .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: 120px;
+    height: 36px;
+    padding: 0 14px;
+    font-size: 13px;
+    line-height: 1;
+  }
 
   /* Snippet box — copy-paste code blob with a Copy button overlay. */
   .snippet { position: relative; margin-bottom: 12px; }

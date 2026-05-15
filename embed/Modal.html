@@ -26,6 +26,18 @@
       function render(d) {
         root.innerHTML = d.connected ? renderConnected(d) : renderDisconnected(d);
         wireUp();
+        resizeModal();
+      }
+
+      // Apps Script modals can't size themselves to content automatically.
+      // We measure body height and ask the host to match — eliminates the
+      // dead space below short states (e.g. connected) and avoids the
+      // chrome cropping content on long states (e.g. welcome).
+      function resizeModal() {
+        try {
+          const h = document.body.scrollHeight;
+          google.script.host.setHeight(h);
+        } catch (_) { /* not available outside Apps Script */ }
       }
 
       // Welcome / disconnected state. First thing every new user sees —
@@ -158,6 +170,10 @@
 
         const refresh = document.getElementById('refresh');
         if (refresh) refresh.addEventListener('click', load);
+
+        document.querySelectorAll('details').forEach(d => {
+          d.addEventListener('toggle', resizeModal);
+        });
 
         // Auto-publish checkbox on the welcome screen swaps the Connect
         // button's href between the publish and no-publish variants.
