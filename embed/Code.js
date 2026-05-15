@@ -52,13 +52,49 @@ function getEmbedData() {
     updatedAt: status.updatedAt || null,
     script: scriptSnippet(formId),
     iframe: iframeSnippet(formId),
-    // Both URL variants — the welcome modal picks one based on the
-    // auto-publish checkbox, no extra server round-trip needed.
-    connectUrl: connectUrl(formId, false),
-    connectAndPublishUrl: connectUrl(formId, true),
+    connectUrl: connectUrl(formId),
     syncUrl: syncUrl(formId),
     previewUrl: previewUrl(formId)
   };
+}
+
+// Publishes the active form using the 2024 publish workflow. Apps
+// Script's FormApp class doesn't expose this — it's REST-only — so we
+// call setPublishSettings directly with the script's OAuth token.
+//
+// Requires `forms.body` in appsscript.json (forms.currentonly alone
+// scopes FormApp access, not REST). The user is already an editor of
+// the form (otherwise FormApp.getActiveForm() wouldn't have given us
+// the form), so we don't need to add ourselves as editor — the OAuth
+// token acts as them.
+//
+// Called from Modal.html on Connect click when the auto-publish
+// checkbox is on. Returns {ok: true} on success, {ok: false, error}
+// on failure so the client can surface the issue.
+function publishActiveForm() {
+  try {
+    const form = FormApp.getActiveForm();
+    const formId = form.getId();
+    const res = UrlFetchApp.fetch(
+      'https://forms.googleapis.com/v1/forms/' + encodeURIComponent(formId) + ':setPublishSettings',
+      {
+        method: 'post',
+        contentType: 'application/json',
+        headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+        payload: JSON.stringify({
+          publishSettings: {
+            publishState: { isPublished: true, isAcceptingResponses: true }
+          }
+        }),
+        muteHttpExceptions: true,
+      }
+    );
+    const code = res.getResponseCode();
+    if (code >= 200 && code < 300) return { ok: true };
+    return { ok: false, error: 'API ' + code + ': ' + res.getContentText().slice(0, 200) };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
 }
 
 // Returns { connected: bool, updatedAt?: number } from our server. Used

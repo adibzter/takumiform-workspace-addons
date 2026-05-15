@@ -14,13 +14,11 @@ function iframeSnippet(formId) {
   );
 }
 
-// `publish=true` opts in to publishing the form on Google during the
-// import on the web app side (the add-on doesn't call Forms write APIs
-// itself — that scope lives on the web app). The welcome screen sends
-// this whenever the user leaves the auto-publish checkbox checked.
-function connectUrl(formId, publish) {
-  var url = APP_BASE + '/app?form=' + encodeURIComponent(formId) + '&feature=' + FEATURE;
-  return publish ? url + '&publish=1' : url;
+// The add-on does its own publishing via REST (see publishActiveForm in
+// Code.js), so the connect URL stays simple — the web app just imports
+// the schema. No publish flag needed in the URL.
+function connectUrl(formId) {
+  return APP_BASE + '/app?form=' + encodeURIComponent(formId) + '&feature=' + FEATURE;
 }
 
 function syncUrl(formId) {

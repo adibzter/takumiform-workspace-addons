@@ -71,9 +71,7 @@
           </label>
 
           <a class="btn primary" id="connect-btn"
-            href="${escapeHtml(d.connectAndPublishUrl)}"
-            data-connect-url="${escapeHtml(d.connectUrl)}"
-            data-connect-publish-url="${escapeHtml(d.connectAndPublishUrl)}"
+            href="${escapeHtml(d.connectUrl)}"
             target="_blank">
             Connect to TakumiForm
           </a>
@@ -175,15 +173,24 @@
           d.addEventListener('toggle', resizeModal);
         });
 
-        // Auto-publish checkbox on the welcome screen swaps the Connect
-        // button's href between the publish and no-publish variants.
+        // Auto-publish — fires in parallel with the Connect anchor's
+        // native new-tab navigation. We deliberately DON'T preventDefault
+        // because google.script.run is async and any deferred window.open
+        // would be blocked by popup heuristics.
+        //
+        // The publish call uses the add-on's forms.body scope and the
+        // script's own OAuth token (see publishActiveForm in Code.js).
+        // No backend round-trip needed — the user's add-on session
+        // already has the permission. By the time they sign in to the
+        // web app and land on /app, their form is already published.
         const autoPublish = document.getElementById('auto-publish');
         const connectBtn = document.getElementById('connect-btn');
         if (autoPublish && connectBtn) {
-          autoPublish.addEventListener('change', () => {
-            connectBtn.href = autoPublish.checked
-              ? connectBtn.dataset.connectPublishUrl
-              : connectBtn.dataset.connectUrl;
+          connectBtn.addEventListener('click', () => {
+            if (!autoPublish.checked) return;
+            google.script.run
+              .withFailureHandler(err => console.warn('Auto-publish failed:', err && err.message))
+              .publishActiveForm();
           });
         }
       }
