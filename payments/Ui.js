@@ -3,7 +3,7 @@ function buildIntroCard() {
     .addWidget(CardService.newTextParagraph().setText(TAGLINE))
     .addWidget(
       CardService.newDecoratedText()
-        .setText('Open a Google Form to connect Stripe or Razorpay.')
+        .setText('Open a Google Form to connect Stripe.')
         .setWrapText(true)
     );
   return CardService.newCardBuilder()
