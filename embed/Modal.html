@@ -124,15 +124,11 @@
         return `
           <div class="status-row">
             <span class="badge ok">Connected</span>
-            ${synced ? `
-              <span class="status-meta">
-                Synced ${escapeHtml(synced)}
-                <span class="dot">·</span>
-                <a href="${escapeHtml(d.syncUrl)}" target="_blank">Sync now</a>
-                <span class="dot">·</span>
-                <button class="link" id="refresh">Refresh</button>
-              </span>
-            ` : ''}
+            <span class="status-meta">
+              <span id="sync-state">${synced ? 'Synced ' + escapeHtml(synced) : 'Synced'}</span>
+              <span class="dot">·</span>
+              <button class="link" id="sync-btn">Sync</button>
+            </span>
           </div>
 
           <p class="label">Embed snippet</p>
@@ -197,9 +193,9 @@
           });
         });
 
-        // Refresh shouldn't blow away the whole modal — that hides the
-        // snippet the user might still be eyeing. Swap the button text in
-        // place and disable it; load() re-renders when the call returns.
+        // Disconnected-state Refresh: user has connected in another tab
+        // and wants the modal to flip to the connected view. Re-fetches
+        // status via getEmbedData() and re-renders.
         const refresh = document.getElementById('refresh');
         if (refresh) refresh.addEventListener('click', () => {
           refresh.disabled = true;
@@ -212,6 +208,40 @@
               console.error('refresh failed:', err);
             })
             .getEmbedData();
+        });
+
+        // Connected-state Sync: inline action. Hits the backend's
+        // addon-sync endpoint via Code.js → no redirect, no new tab. The
+        // button flips to "Syncing…", then the status text updates with
+        // the fresh timestamp on success or an error message on failure.
+        const syncBtn = document.getElementById('sync-btn');
+        const syncState = document.getElementById('sync-state');
+        if (syncBtn) syncBtn.addEventListener('click', () => {
+          syncBtn.disabled = true;
+          const prevLabel = syncBtn.textContent;
+          syncBtn.textContent = 'Syncing…';
+          if (syncState) syncState.textContent = 'Syncing…';
+          google.script.run
+            .withSuccessHandler(result => {
+              syncBtn.disabled = false;
+              syncBtn.textContent = prevLabel;
+              if (result && result.ok) {
+                if (syncState && result.updatedAt) {
+                  syncState.textContent = 'Synced ' + syncedAgo(result.updatedAt);
+                }
+              } else {
+                const msg = (result && result.error) || 'Sync failed';
+                if (syncState) syncState.textContent = msg;
+                console.error('sync failed:', result);
+              }
+            })
+            .withFailureHandler(err => {
+              syncBtn.disabled = false;
+              syncBtn.textContent = prevLabel;
+              if (syncState) syncState.textContent = 'Sync failed: ' + (err.message || err);
+              console.error('sync exception:', err);
+            })
+            .syncForm();
         });
 
         document.querySelectorAll('details').forEach(d => {

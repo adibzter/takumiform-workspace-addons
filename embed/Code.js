@@ -52,10 +52,34 @@ function getEmbedData() {
     script: scriptSnippet(formId),
     iframe: iframeSnippet(formId),
     connectUrl: connectUrl(formId),
-    syncUrl: syncUrl(formId),
     previewUrl: previewUrl(formId),
     customizeUrl: customizeUrl(formId)
   };
+}
+
+// Inline re-sync. Called by the Sync button in Modal.html via
+// google.script.run, so the user gets a status update without bouncing
+// through a new browser tab into /app. Returns the same {connected,
+// updatedAt} shape the modal already knows how to render. On failure the
+// modal surfaces an inline error instead of silently leaving stale info.
+function syncForm() {
+  const formId = FormApp.getActiveForm().getId();
+  try {
+    const res = UrlFetchApp.fetch(addonSyncUrl(formId), {
+      method: 'post',
+      contentType: 'application/x-www-form-urlencoded',
+      payload: 'formId=' + encodeURIComponent(formId),
+      muteHttpExceptions: true,
+    });
+    const code = res.getResponseCode();
+    const body = JSON.parse(res.getContentText() || '{}');
+    if (code >= 200 && code < 300 && body.ok) {
+      return { ok: true, connected: true, updatedAt: body.updatedAt };
+    }
+    return { ok: false, error: body.error || ('HTTP ' + code) };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
 }
 
 // Publishes the active form using the 2024 Forms publish workflow.

@@ -21,8 +21,11 @@ function connectUrl(formId) {
   return APP_BASE + '/app?form=' + encodeURIComponent(formId) + '&feature=' + FEATURE;
 }
 
-function syncUrl(formId) {
-  return APP_BASE + '/app?form=' + encodeURIComponent(formId) + '&feature=' + FEATURE + '&sync=1';
+// Server endpoint for in-place syncing — the modal now triggers this
+// from Apps Script via UrlFetchApp so there's no redirect into the web
+// app. Kept as a helper for clarity even though it's a single URL.
+function addonSyncUrl(formId) {
+  return APP_BASE + '/api/forms/addon-sync';
 }
 
 function previewUrl(formId) {
