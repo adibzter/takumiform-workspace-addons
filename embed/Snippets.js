@@ -29,6 +29,14 @@ function previewUrl(formId) {
   return APP_BASE + '/f/' + formId;
 }
 
+// Deep-links straight into the theme editor for this form. The web app's
+// /app entry resolves the Google form ID to the local row and 302s to
+// /app/forms/<localId>/customize, so the add-on never has to know the
+// local ID.
+function customizeUrl(formId) {
+  return APP_BASE + '/app?form=' + encodeURIComponent(formId) + '&feature=customize';
+}
+
 function statusUrl(formId) {
   return APP_BASE + '/api/forms/status?formId=' + encodeURIComponent(formId);
 }

@@ -53,7 +53,8 @@ function getEmbedData() {
     iframe: iframeSnippet(formId),
     connectUrl: connectUrl(formId),
     syncUrl: syncUrl(formId),
-    previewUrl: previewUrl(formId)
+    previewUrl: previewUrl(formId),
+    customizeUrl: customizeUrl(formId)
   };
 }
 
