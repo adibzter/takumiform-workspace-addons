@@ -197,8 +197,22 @@
           });
         });
 
+        // Refresh shouldn't blow away the whole modal — that hides the
+        // snippet the user might still be eyeing. Swap the button text in
+        // place and disable it; load() re-renders when the call returns.
         const refresh = document.getElementById('refresh');
-        if (refresh) refresh.addEventListener('click', load);
+        if (refresh) refresh.addEventListener('click', () => {
+          refresh.disabled = true;
+          refresh.textContent = 'Refreshing…';
+          google.script.run
+            .withSuccessHandler(d => { render(d); })
+            .withFailureHandler(err => {
+              refresh.disabled = false;
+              refresh.textContent = 'Refresh';
+              console.error('refresh failed:', err);
+            })
+            .getEmbedData();
+        });
 
         document.querySelectorAll('details').forEach(d => {
           d.addEventListener('toggle', resizeModal);
