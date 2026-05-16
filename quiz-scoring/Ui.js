@@ -13,7 +13,7 @@ function buildIntroCard() {
 }
 
 function buildEditorCard(formId) {
-  const url = `https://takumiform.com/app?form=${encodeURIComponent(formId)}&feature=${FEATURE}`;
+  const url = `https://takumiform.com/dashboard?form=${encodeURIComponent(formId)}&feature=${FEATURE}`;
   const button = CardService.newTextButton()
     .setText('Configure scoring')
     .setOpenLink(CardService.newOpenLink().setUrl(url).setOpenAs(CardService.OpenAs.FULL_SIZE))

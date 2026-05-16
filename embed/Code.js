@@ -59,7 +59,7 @@ function getEmbedData() {
 
 // Inline re-sync. Called by the Sync button in Modal.html via
 // google.script.run, so the user gets a status update without bouncing
-// through a new browser tab into /app. Returns the same {connected,
+// through a new browser tab into /dashboard. Returns the same {connected,
 // updatedAt} shape the modal already knows how to render. On failure the
 // modal surfaces an inline error instead of silently leaving stale info.
 function syncForm() {

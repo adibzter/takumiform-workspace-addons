@@ -28,7 +28,7 @@ function iframeSnippet(formId) {
 // Code.js), so the connect URL stays simple — the web app just imports
 // the schema. No publish flag needed in the URL.
 function connectUrl(formId) {
-  return APP_BASE + '/app?form=' + encodeURIComponent(formId) + '&feature=' + FEATURE;
+  return APP_BASE + '/dashboard?form=' + encodeURIComponent(formId) + '&feature=' + FEATURE;
 }
 
 // Server endpoint for in-place syncing — the modal now triggers this
@@ -43,11 +43,11 @@ function previewUrl(formId) {
 }
 
 // Deep-links straight into the theme editor for this form. The web app's
-// /app entry resolves the Google form ID to the local row and 302s to
-// /app/forms/<localId>/customize, so the add-on never has to know the
+// /dashboard entry resolves the Google form ID to the local row and 302s to
+// /dashboard/forms/<localId>/customize, so the add-on never has to know the
 // local ID.
 function customizeUrl(formId) {
-  return APP_BASE + '/app?form=' + encodeURIComponent(formId) + '&feature=customize';
+  return APP_BASE + '/dashboard?form=' + encodeURIComponent(formId) + '&feature=customize';
 }
 
 function statusUrl(formId) {

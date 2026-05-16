@@ -72,7 +72,7 @@ To create a new script bound to a specific Form (only way to test classic Forms 
 
 ## Shared deep-link contract
 
-Every add-on links back to `https://takumiform.com/app?form=<googleFormId>&feature=<slug>`. The TakumiForm web app reads `feature` and routes the user accordingly — e.g. `feature=customize` lands on `/app/forms/<localId>/customize` after auto-importing the schema.
+Every add-on links back to `https://takumiform.com/dashboard?form=<googleFormId>&feature=<slug>`. The TakumiForm web app reads `feature` and routes the user accordingly — e.g. `feature=customize` lands on `/dashboard/forms/<localId>/customize` after auto-importing the schema.
 
 ## Marketplace publishing
 
