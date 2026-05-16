@@ -1,8 +1,7 @@
-// Until prod cuts over, everything lives on dev.takumiform.com. When
-// takumiform.com is live, swap both constants — embed.js is served from
-// the same Astro app, no separate cdn. subdomain in the plan.
-const APP_BASE = 'https://dev.takumiform.com';
-const CDN_URL = 'https://dev.takumiform.com/embed.js';
+// Both constants point at production. `embed.js` is served from the
+// same Astro app, no separate cdn. subdomain in the plan.
+const APP_BASE = 'https://takumiform.com';
+const CDN_URL = 'https://takumiform.com/embed.js';
 
 function onOpen(e) {
   FormApp.getUi()
