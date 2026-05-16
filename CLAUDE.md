@@ -66,6 +66,12 @@ cp .clasp.json.example .clasp.json   # then paste your scriptId
 npx -y @google/clasp@latest push -f  # uploads files to the Apps Script project
 ```
 
+**After any code change to an add-on, run `npx -y @google/clasp@latest push -f` from that add-on's folder.** Apps Script doesn't pick up local edits otherwise — the bound script in the test form keeps running the old code until you push. Always push before reporting work as done.
+
+**After code changes, update the relevant `.md` docs in the same pass** — this `CLAUDE.md`, `STYLEGUIDE.md`, and the matching `docs/addons/<addon>.md` over in the sibling [../takumiform/](../takumiform/) repo. Stale docs are worse than missing ones.
+
+**Don't run `git add`, `git commit`, or `git push`.** The human handles all git operations — leave changes unstaged for them to review. (This is separate from `clasp push`, which you *should* run — that pushes to Apps Script, not git.)
+
 To create a new script bound to a specific Form (only way to test classic Forms add-ons during dev):
 
 1. Open the target Google Form
