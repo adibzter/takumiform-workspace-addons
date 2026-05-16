@@ -1,17 +1,27 @@
 const FEATURE = 'embed';
 
+// Embed snippet output is formatted to match how a human would write it:
+// leading comment so the user can find it in their source later, one
+// attribute per line on the iframe variant, two-space indentation.
 function scriptSnippet(formId) {
-  return (
-    '<div data-takumiform="' + formId + '"></div>\n' +
-    '<script src="' + CDN_URL + '" async></script>'
-  );
+  return [
+    '<!-- TakumiForm embed -->',
+    '<div data-takumiform="' + formId + '"></div>',
+    '<script src="' + CDN_URL + '" async></script>',
+  ].join('\n');
 }
 
 function iframeSnippet(formId) {
-  return (
-    '<iframe src="' + APP_BASE + '/f/' + formId + '"\n' +
-    '  width="100%" height="600" frameborder="0"></iframe>'
-  );
+  return [
+    '<!-- TakumiForm embed (iframe fallback) -->',
+    '<iframe',
+    '  src="' + APP_BASE + '/f/' + formId + '"',
+    '  title="TakumiForm"',
+    '  width="100%"',
+    '  height="600"',
+    '  frameborder="0"',
+    '></iframe>',
+  ].join('\n');
 }
 
 // The add-on does its own publishing via REST (see publishActiveForm in
