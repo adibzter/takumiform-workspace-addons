@@ -25,7 +25,7 @@ Pricing is bundled on takumiform.com — installing any of the five listings get
 | UI surface | `HtmlService` modal (not sidebar, not CardService) | Modal: more room than the ~300 px sidebar, commands attention for one-shot actions like "grab the snippet" |
 | Templating | Apps Script `createTemplateFromFile(...).evaluate()` | Used to inline `Stylesheet.html` into each `Modal.html` via `<?!= include('Stylesheet') ?>` |
 | Frontend | Plain HTML + JS | No framework. Server functions are called via `google.script.run` |
-| OAuth scopes | `forms.currentonly` + `forms.body` (REST) + `script.external_request` | Non-sensitive — keeps the Marketplace verification bar low |
+| OAuth scopes | `forms.currentonly` + `script.container.ui` + `script.external_request` | All non-sensitive — keeps the Marketplace verification bar low. The embed add-on used to hold `forms.body` (sensitive) for auto-publish via REST; dropped to avoid the sensitive-scope review on every Marketplace listing |
 | Backend calls | `UrlFetchApp` against the TakumiForm web app | Status, sync, snippet generation |
 | Deploy tool | [clasp](https://github.com/google/clasp) via `npx @google/clasp@latest` | Never installed globally |
 
@@ -71,7 +71,7 @@ To create a new script bound to a specific Form (only way to test classic Forms 
 
 ## Current state
 
-- **embed/** — fully built out as a snippet generator with status check, auto-publish on modal open, and deep links into the TakumiForm dashboard / customize editor. Deployed against a test form.
+- **embed/** — fully built out as a snippet generator with status check and deep links into the TakumiForm dashboard / customize editor. Deployed against a test form. (Previously auto-published the form via REST; that step was removed when we dropped `forms.body` to keep the listing's verification bar low. Users now click Publish in Google Forms themselves; our `/f/<id>` renderer shows a "not published yet" page until they do.)
 - **file-upload/**, **payments/**, **quiz-scoring/**, **whatsapp-delivery/** — scaffolded with the old (broken) CardService + Workspace Add-on manifest. Need conversion to the Editor Add-on pattern shown in `embed/` before they can be pushed.
 
 ## Shared deep-link contract
@@ -80,4 +80,4 @@ Every add-on links back to `https://takumiform.com/dashboard?form=<googleFormId>
 
 ## Marketplace publishing
 
-Not yet done. Each listing needs a GCP project, OAuth consent screen + brand verification, Marketplace SDK config, screenshots, privacy/terms URLs, and Google review. The non-sensitive scopes (`forms.currentonly`, `forms.body`) keep the bar low. Start the consent-screen verification on the web app first (4–6 week lead time); the add-on listings can follow.
+Not yet done. Each listing needs a GCP project, OAuth consent screen + brand verification, Marketplace SDK config, screenshots, privacy/terms URLs, and Google review. **Every add-on now holds only non-sensitive scopes** (`forms.currentonly`, `script.container.ui`, `script.external_request`, `script.locale`), so each listing's review is the lower "brand verification" bar — not the multi-week sensitive-scope review. Start the consent-screen verification on the web app first (it still has one sensitive scope, `forms.body.readonly`, and a 2–4 week lead time); the add-on listings can follow quickly behind.

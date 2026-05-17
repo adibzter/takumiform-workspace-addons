@@ -4,7 +4,6 @@
   "runtimeVersion": "V8",
   "oauthScopes": [
     "https://www.googleapis.com/auth/forms.currentonly",
-    "https://www.googleapis.com/auth/forms.body",
     "https://www.googleapis.com/auth/script.container.ui",
     "https://www.googleapis.com/auth/script.external_request"
   ]

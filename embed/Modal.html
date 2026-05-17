@@ -10,48 +10,16 @@
     <script>
       const root = document.getElementById('root');
 
-      // Two parallel calls on modal open:
-      // 1. load() fetches connection status so we can render the right state
-      // 2. autoPublish() publishes the form on Google in the background
-      //
-      // Auto-publish is intentional and unconditional — installing the
-      // embed add-on means the user wants the form embeddable, which
-      // requires it being published. The API call is idempotent, so
-      // re-opening the modal on an already-published form is a no-op.
+      // Single call on modal open: fetch connection + status so we know
+      // which state to render. The add-on used to also auto-publish the
+      // form via the Forms REST API, but we dropped the `forms.body`
+      // scope to keep the Marketplace verification bar low (only
+      // `forms.currentonly` + script.* now — all non-sensitive). The
+      // user is expected to click Publish in Google Forms themselves;
+      // we surface that requirement clearly in both the welcome and
+      // connected states, and the renderer at /f/<id> shows a "form
+      // isn't published yet" page if they miss it.
       load();
-      autoPublish();
-
-      // Auto-publish — fires on every modal open. Silent on success
-      // (the modal's own "Loading…" / connected state is enough signal
-      // that things are working). Only surfaces a banner if publishing
-      // actually fails, since the user can't fix what they can't see.
-      function autoPublish() {
-        google.script.run
-          .withSuccessHandler(result => {
-            if (result && result.ok) return;
-            const msg = result ? (result.error || 'unknown') : 'no result';
-            const code = result && result.code ? ' (HTTP ' + result.code + ')' : '';
-            showPublishStatus('error', 'Could not publish' + code + ': ' + msg);
-            console.error('publishActiveForm result:', result);
-          })
-          .withFailureHandler(err => {
-            showPublishStatus('error', 'Publish call failed: ' + (err && err.message || err));
-            console.error('publishActiveForm exception:', err);
-          })
-          .publishActiveForm();
-      }
-
-      function showPublishStatus(kind, message) {
-        let el = document.getElementById('publish-status');
-        if (!el) {
-          el = document.createElement('div');
-          el.id = 'publish-status';
-          document.body.insertBefore(el, document.body.firstChild);
-        }
-        el.className = 'publish-status publish-status--' + kind;
-        el.textContent = message;
-        resizeModal();
-      }
 
       function load() {
         root.innerHTML = '<div class="loading">Loading…</div>';
@@ -86,9 +54,11 @@
       // not the form's title or a "not connected" label. Keep the
       // checklist short; long lists get skimmed past.
       //
-      // Publishing happens silently in the background (see autoPublish
-      // above) — the user installed the embed add-on, which implies they
-      // want the form embeddable, which requires it to be published.
+      // We surface the "make sure your form is Published" reminder
+      // because we no longer auto-publish via REST (forms.body scope
+      // dropped for verification simplicity). The user has to click
+      // Google Forms' own Publish button before respondents can
+      // submit — same one-click action it would be anyway.
       function renderDisconnected(d) {
         return `
           <p class="welcome-title">Embed this form on your site</p>
@@ -107,7 +77,7 @@
             Connect to TakumiForm
           </a>
           <p class="footnote">
-            Free for 100 responses/mo. No card.
+            Free for 7 days. Click <strong>Publish</strong> in Google Forms to start accepting responses.
           </p>
 
           <div class="refresh">

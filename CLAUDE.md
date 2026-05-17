@@ -93,7 +93,7 @@ To create a new script bound to a specific Form (only way to test classic Forms 
 
 Each listing needs:
 - A GCP project
-- OAuth consent screen + brand verification (`forms.currentonly` is non-sensitive, so the verification bar is lower than the web app's `forms.body.readonly`)
+- OAuth consent screen + brand verification. Every add-on (including `embed`) now holds only non-sensitive scopes (`forms.currentonly`, `script.container.ui`, `script.external_request`, `script.locale`), so the verification bar is the lower "brand only" review — not the sensitive-scope justification the web app needs for `forms.body.readonly`. The embed add-on previously held `forms.body` for auto-publish via REST; that's been dropped (users click Google's own Publish button instead).
 - Marketplace SDK config
 - Screenshots, privacy policy URL, terms URL
 - Google review
