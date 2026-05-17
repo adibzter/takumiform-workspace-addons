@@ -1,6 +1,6 @@
 const FEATURE = 'scoring';
 const TITLE = 'Smarter quizzes than Google gives you';
-const TAGLINE = 'Weighted scoring, conditional branching, multi-step pages, pass/fail email triggers.';
+const TAGLINE = 'Weighted scoring, multi-step pages, pass/fail email triggers.';
 
 function onHomepage(e) {
   return buildIntroCard();

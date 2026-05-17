@@ -1,12 +1,14 @@
 # TakumiForm — Google Workspace Add-ons
 
-Five Google Forms add-ons, one per Marketplace listing keyword (customize, embed, file-upload, payments, quiz-scoring). They are the **install funnel and editor entry point** for TakumiForm — they don't hold product state. Real customization, response handling, and payments live on `takumiform.com` (sibling repo at [../takumiform/](../takumiform/), see its [ARCHITECTURE.md](../takumiform/ARCHITECTURE.md)).
+Five Google Forms add-ons, one per Marketplace listing keyword (embed, file-upload, payments, quiz-scoring, whatsapp-delivery). They are the **install funnel and editor entry point** for TakumiForm — they don't hold product state. Real customization, response handling, and payments live on `takumiform.com` (sibling repo at [../takumiform/](../takumiform/), see its [ARCHITECTURE.md](../takumiform/ARCHITECTURE.md)).
+
+Customize is not a separate add-on — it's part of every TakumiForm plan, accessed via the `/dashboard` web app. The Embed Marketplace listing is the install funnel for the customize feature too (when the user installs Embed, they land in the customize editor on takumiform.com). Branching is similarly a feature of Embed, not a standalone product — Formfacade also bundles branching inside its Embed add-on rather than selling it separately.
 
 Responses still land in the user's native Google Forms responses tab (and linked Sheet) — when someone submits via the takumiform-rendered form or its embed, the takumiform backend forwards the answers to Google Forms' public `formResponse` URL on the owner's behalf. From the form-owner's perspective, the add-on never has to ask for write access to responses, and nothing in this repo handles submissions.
 
 ## Why one add-on per keyword
 
-Formfacade has 6+ Marketplace listings, one per SEO term ("customize", "embed", "file upload", etc.). Each listing ranks for its own keyword in the Workspace Marketplace search. We're mirroring that strategy with five listings. All five point users back to the same takumiform.com account.
+Formfacade has 6+ Marketplace listings, one per SEO term ("customize", "embed", "file upload", etc.). Each listing ranks for its own keyword in the Workspace Marketplace search. We mirror the strategy with five listings — the "customize" keyword is captured by the Embed listing's title and description rather than a separate add-on, since we don't sell customize as its own SKU. All five listings point users back to the same takumiform.com account.
 
 ## Forms add-ons are NOT Workspace add-ons
 
@@ -85,7 +87,7 @@ To create a new script bound to a specific Form (only way to test classic Forms 
 ## Current state
 
 - **embed/** — built out as a real snippet generator. Deployed against test form bound to script `10ulqZJvGWQtZehNsBsiB33e_lxcWRa825NL__5Y6DrjNhH6ZEbl-pYKE`.
-- **customize/**, **file-upload/**, **payments/**, **quiz-scoring/** — still scaffolded with the old (broken) CardService + Workspace Add-on shape. They need conversion to the same Editor Add-on pattern as `embed/` before they can be pushed.
+- **file-upload/**, **payments/**, **quiz-scoring/**, **whatsapp-delivery/** — still scaffolded with the old (broken) CardService + Workspace Add-on shape. They need conversion to the same Editor Add-on pattern as `embed/` before they can be pushed.
 
 ## Marketplace publishing — not done
 

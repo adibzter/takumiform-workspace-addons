@@ -4,13 +4,17 @@ Five separate Google Forms add-ons, one per Marketplace listing keyword. The "on
 
 | Folder | Marketplace listing | Tier |
 | --- | --- | --- |
-| [customize/](customize/) | "Customize Google Forms" | 1 |
 | [embed/](embed/) | "Embed Google Forms" | 1 |
 | [file-upload/](file-upload/) | "Google Forms File Upload (No Login)" | 1 |
 | [payments/](payments/) | "Google Forms Payments" | 2 |
 | [quiz-scoring/](quiz-scoring/) | "Google Forms Quiz Scoring" | 2 |
+| [whatsapp-delivery/](whatsapp-delivery/) | "Google Forms to WhatsApp" | 2 |
 
 All add-ons share one backend (TakumiForm) — each add-on is the install funnel and the editor entry point. The actual customization, embed snippet, response handling, and payments happen on `takumiform.com` (sibling repo at [../takumiform/](../takumiform/)).
+
+**Customize is not a separate add-on.** It's part of every TakumiForm plan, accessed via the dashboard on takumiform.com. The Embed Marketplace listing's description covers "customize Google Forms" as a keyword — installing Embed lands the user in the customize editor. Branching is similarly a feature of the Embed product, not a standalone add-on (Formfacade does the same).
+
+Pricing is bundled on takumiform.com — installing any of the five listings gets the user to the same Bundle tier (or one of the per-add-on tiers if they want just one). The split exists for Marketplace SEO, not for billing.
 
 ## Tech stack
 
@@ -68,7 +72,7 @@ To create a new script bound to a specific Form (only way to test classic Forms 
 ## Current state
 
 - **embed/** — fully built out as a snippet generator with status check, auto-publish on modal open, and deep links into the TakumiForm dashboard / customize editor. Deployed against a test form.
-- **customize/**, **file-upload/**, **payments/**, **quiz-scoring/** — scaffolded with the old (broken) CardService + Workspace Add-on manifest. Need conversion to the Editor Add-on pattern shown in `embed/` before they can be pushed.
+- **file-upload/**, **payments/**, **quiz-scoring/**, **whatsapp-delivery/** — scaffolded with the old (broken) CardService + Workspace Add-on manifest. Need conversion to the Editor Add-on pattern shown in `embed/` before they can be pushed.
 
 ## Shared deep-link contract
 
