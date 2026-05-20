@@ -89,16 +89,15 @@
       // Connected state. Modal title bar already says "TakumiForm —
       // Embed" so we don't repeat the form name; lead with status, then
       // the snippet (the thing the user came for), then secondary actions.
+      //
+      // No visible Sync button: Code.js fires a background sync against
+      // /api/forms/addon-sync when the modal opens, and silently logs
+      // failures. The user can't act on a sync error from this surface,
+      // and the dashboard's own auto-sync covers anyone who switches over.
       function renderConnected(d) {
-        const synced = d.updatedAt ? syncedAgo(d.updatedAt) : null;
         return `
           <div class="status-row">
             <span class="badge ok">Connected</span>
-            <span class="status-meta">
-              <span id="sync-state">${synced ? 'Synced ' + escapeHtml(synced) : 'Synced'}</span>
-              <span class="dot">·</span>
-              <button class="link" id="sync-btn">Sync</button>
-            </span>
           </div>
 
           <p class="label">Embed snippet</p>
@@ -120,21 +119,6 @@
             </p>
           </details>
         `;
-      }
-
-      // Apps Script gives us a millisecond epoch — format it client-side
-      // so the modal matches the dashboard's "Synced X ago" phrasing.
-      function syncedAgo(ms) {
-        const diff = Date.now() - ms;
-        const sec = Math.floor(diff / 1000);
-        if (sec < 30) return 'just now';
-        if (sec < 60) return sec + 's ago';
-        const min = Math.floor(sec / 60);
-        if (min < 60) return min + ' min ago';
-        const hr = Math.floor(min / 60);
-        if (hr < 24) return hr + 'h ago';
-        const day = Math.floor(hr / 24);
-        return day + 'd ago';
       }
 
       function snippetBox(id, value) {
@@ -178,40 +162,6 @@
               console.error('refresh failed:', err);
             })
             .getEmbedData();
-        });
-
-        // Connected-state Sync: inline action. Hits the backend's
-        // addon-sync endpoint via Code.js → no redirect, no new tab. The
-        // button flips to "Syncing…", then the status text updates with
-        // the fresh timestamp on success or an error message on failure.
-        const syncBtn = document.getElementById('sync-btn');
-        const syncState = document.getElementById('sync-state');
-        if (syncBtn) syncBtn.addEventListener('click', () => {
-          syncBtn.disabled = true;
-          const prevLabel = syncBtn.textContent;
-          syncBtn.textContent = 'Syncing…';
-          if (syncState) syncState.textContent = 'Syncing…';
-          google.script.run
-            .withSuccessHandler(result => {
-              syncBtn.disabled = false;
-              syncBtn.textContent = prevLabel;
-              if (result && result.ok) {
-                if (syncState && result.updatedAt) {
-                  syncState.textContent = 'Synced ' + syncedAgo(result.updatedAt);
-                }
-              } else {
-                const msg = (result && result.error) || 'Sync failed';
-                if (syncState) syncState.textContent = msg;
-                console.error('sync failed:', result);
-              }
-            })
-            .withFailureHandler(err => {
-              syncBtn.disabled = false;
-              syncBtn.textContent = prevLabel;
-              if (syncState) syncState.textContent = 'Sync failed: ' + (err.message || err);
-              console.error('sync exception:', err);
-            })
-            .syncForm();
         });
 
         document.querySelectorAll('details').forEach(d => {

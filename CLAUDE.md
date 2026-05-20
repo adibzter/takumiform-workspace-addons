@@ -24,14 +24,14 @@ This is the one thing that will bite you. Google has two add-on models:
 Editor add-on entry points:
 - `onOpen(e)` — registers the menu via `FormApp.getUi().createAddonMenu()`
 - `onInstall(e)` — usually just delegates to `onOpen`
-- A function that opens the sidebar: `HtmlService.createHtmlOutputFromFile('Sidebar')` → `FormApp.getUi().showSidebar(...)`
-- Sidebar HTML calls server functions via `google.script.run`
+- A function that opens the UI: we use a modal (`FormApp.getUi().showModalDialog(...)`). Sidebars are the other supported option but we picked modal — see UI standard below.
+- Modal HTML calls server functions via `google.script.run`
 
 ## Stack
 
 - **Google Apps Script** (V8 runtime) — one project per add-on
 - **clasp** via `npx @google/clasp@latest` (don't install globally)
-- **CardService not used here** — Forms sidebars are plain HTML served by `HtmlService`
+- **CardService not used here** — Forms add-on UIs are plain HTML served by `HtmlService`
 - Manifest only declares OAuth scopes + a name; no `addOns` block
 
 ## Per-add-on layout
@@ -50,7 +50,9 @@ Editor add-on entry points:
 
 Every add-on uses the same tokens, components, layout container, and copy patterns so the five Marketplace listings feel like one product. The standard lives in [STYLEGUIDE.md](STYLEGUIDE.md) — read it before building a new add-on.
 
-**Container is a modal**, not a sidebar. The user opens the add-on briefly to do one thing (grab snippet, hit sync, configure) then closes it. Modal commands attention on first run and gives more room than the ~300px sidebar. Trade-off documented in STYLEGUIDE.md.
+**Container is a modal**, not a sidebar. The user opens the add-on briefly to do one thing (grab snippet, configure) then closes it. Modal commands attention on first run and gives more room than the ~300px sidebar. Trade-off documented in STYLEGUIDE.md.
+
+**Sync lives in the web app only.** The modal does not expose a Sync button or "Synced X ago" timestamp. When the modal opens and the form is connected, `Code.js` fires a background POST to `/api/forms/addon-sync` and ignores the result — failures land in Stackdriver, never in the user's face. The dashboard's "Sync now" button is the single visible knob for forcing a refresh; the dashboard's 1-hour auto-sync covers the passive case. Centralizing sync this way means future add-ons don't each ship their own sync UI.
 
 The shared CSS ships as `Stylesheet.html` in each add-on (a deliberate copy, not an import). Modal.html includes it via Apps Script templating:
 
@@ -105,9 +107,9 @@ Start the consent-screen verification on the web app first (4–6 week lead time
 The simplest thing that works wins. We learned this the hard way already — the first version of these add-ons used CardService and a Workspace Add-on manifest that Forms doesn't actually support. The fix wasn't a clever workaround; it was the older, simpler, supported model.
 
 - **Prefer the boring supported path over the new shiny one.** Forms add-ons have used `onOpen` + `HtmlService` for years. That's what works. Don't try to retrofit it into something else.
-- **Add a file or abstraction only when its absence is causing real pain.** Each add-on has four files: manifest, entry points, snippet helpers, sidebar HTML. That's enough. Don't introduce a build step, a bundler, or a shared library across add-ons unless you genuinely need one.
+- **Add a file or abstraction only when its absence is causing real pain.** Each add-on has four files: manifest, entry points, snippet helpers, modal HTML. That's enough. Don't introduce a build step, a bundler, or a shared library across add-ons unless you genuinely need one.
 - **Copy-paste between add-ons is fine for now.** Five small near-duplicates are easier to read than one factored abstraction with five config files.
-- **Sidebar UI is plain HTML.** No React, no Solid, no framework — `google.script.run` plus DOM updates is enough for a sidebar.
+- **Modal UI is plain HTML.** No React, no Solid, no framework — `google.script.run` plus DOM updates is enough.
 
 When tempted to add a layer, ask: *is this solving a problem we have today, or one we imagine having?* If it's the second one, don't.
 
@@ -117,7 +119,7 @@ We optimize for **maintainability and readability** over cleverness. The next pe
 
 - **Names describe the thing, not the type.** `formId` not `fid` or `id`. `scriptSnippet(formId)` not `s(f)`. Acronyms are OK only if they're domain terms (`url`, `id`, `html`).
 - **Boring code over clever code.** Three obvious lines beat one regex-laden one-liner. No "look ma, no temporaries".
-- **One responsibility per file.** [Snippets.js](embed/Snippets.js) only builds strings. [Code.js](embed/Code.js) only handles entry points. [Sidebar.html](embed/Sidebar.html) only renders UI.
+- **One responsibility per file.** [Snippets.js](embed/Snippets.js) only builds strings. [Code.js](embed/Code.js) only handles entry points. [Modal.html](embed/Modal.html) only renders UI.
 - **Co-locate the data with the code that uses it.** Constants like `CDN_URL`, `NPM_PKG`, `APP_BASE` live at the top of the file that consumes them, not in a global `constants.js`.
 - **Default to no comments.** Only add one when the *why* is non-obvious (a Google API quirk, a workaround, a security constraint). Don't restate what the code already says.
 - **Plain functions over abstractions.** No classes unless there's actual state. No "manager" / "helper" / "util" classes — those are noise.

@@ -40,15 +40,24 @@ function include(filename) {
 // already connected to TakumiForm so the modal can render the right
 // state — disconnected (welcome + Connect CTA) or connected (the snippet
 // and supporting actions).
+//
+// When connected, we fire a background sync against /api/forms/addon-sync
+// so the dashboard reflects the latest form structure by the time the
+// user clicks through. The sync is fire-and-forget: failures are logged
+// but never surfaced in the modal, because there's nothing the user can
+// do from here to fix a sync failure — switching tabs to the dashboard
+// would just re-trigger sync via the auto-refresh path. Centralizing
+// sync in the web app also means the four scaffolded add-ons don't each
+// need their own sync UI.
 function getEmbedData() {
   const form = FormApp.getActiveForm();
   const formId = form.getId();
   const status = fetchStatus(formId);
+  if (status.connected) triggerBackgroundSync(formId);
   return {
     formId: formId,
     title: form.getTitle() || 'Untitled form',
     connected: status.connected,
-    updatedAt: status.updatedAt || null,
     script: scriptSnippet(formId),
     iframe: iframeSnippet(formId),
     connectUrl: connectUrl(formId),
@@ -57,34 +66,23 @@ function getEmbedData() {
   };
 }
 
-// Inline re-sync. Called by the Sync button in Modal.html via
-// google.script.run, so the user gets a status update without bouncing
-// through a new browser tab into /dashboard. Returns the same {connected,
-// updatedAt} shape the modal already knows how to render. On failure the
-// modal surfaces an inline error instead of silently leaving stale info.
-function syncForm() {
-  const formId = FormApp.getActiveForm().getId();
+// Fire-and-forget POST to /api/forms/addon-sync. Errors are logged to
+// Stackdriver only; the modal never blocks or paints on the result.
+function triggerBackgroundSync(formId) {
   try {
-    const res = UrlFetchApp.fetch(addonSyncUrl(formId), {
+    UrlFetchApp.fetch(addonSyncUrl(formId), {
       method: 'post',
       contentType: 'application/x-www-form-urlencoded',
       payload: 'formId=' + encodeURIComponent(formId),
       muteHttpExceptions: true,
     });
-    const code = res.getResponseCode();
-    const body = JSON.parse(res.getContentText() || '{}');
-    if (code >= 200 && code < 300 && body.ok) {
-      return { ok: true, connected: true, updatedAt: body.updatedAt };
-    }
-    return { ok: false, error: body.error || ('HTTP ' + code) };
   } catch (e) {
-    return { ok: false, error: e.message };
+    console.error('addon-sync trigger failed:', e && e.message);
   }
 }
 
-// Returns { connected: bool, updatedAt?: number } from our server. Used
-// on modal load and by the "Refresh" link after the user has connected
-// or synced in a separate tab.
+// Returns { connected: bool } from our server. Used on modal load and by
+// the "Refresh" link after the user has connected in a separate tab.
 function fetchStatus(formId) {
   try {
     const res = UrlFetchApp.fetch(statusUrl(formId), { muteHttpExceptions: true });
