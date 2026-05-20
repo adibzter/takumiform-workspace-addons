@@ -26,7 +26,7 @@ function showModal() {
     .evaluate()
     .setWidth(560)
     .setHeight(500);
-  FormApp.getUi().showModalDialog(html, 'TakumiForm — Embed');
+  FormApp.getUi().showModalDialog(html, 'TakumiForm - Embed in Website');
 }
 
 // Used by Modal.html via `<?!= include('Stylesheet') ?>` to inline the
