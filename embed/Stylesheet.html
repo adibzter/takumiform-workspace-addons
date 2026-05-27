@@ -179,6 +179,21 @@
     padding: 0;
   }
 
+  /* Sync status next to the Connected badge. Two pieces — passive
+     "Synced X ago" text and a clickable "Sync now" link that re-pushes
+     the schema for users who edit the form with the modal still open. */
+  .sync-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--tk-text-subtle);
+  }
+  .sync-status .sep { color: var(--tk-divider); }
+  .sync-status .link { font-size: 12px; }
+  .sync-status[data-state="syncing"] .when { font-style: italic; }
+  .sync-status[data-state="failed"] .when { color: var(--tk-danger); }
+
   /* Status header — badge on the left, "Synced X · Sync now · Refresh"
      on the right. Wraps cleanly on narrow widths. */
   .status-row {

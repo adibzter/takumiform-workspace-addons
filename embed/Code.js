@@ -53,7 +53,12 @@ function getEmbedData() {
   const form = FormApp.getActiveForm();
   const formId = form.getId();
   const status = fetchStatus(formId);
-  if (status.connected) triggerBackgroundSync(formId);
+  // Always push the schema, connected or not. If connected → updates the
+  // existing forms row. If not connected → stashes payload in a stage
+  // cache that /dashboard?form=<id> picks up after sign-in. Either way,
+  // the web app no longer needs a Google scope to fetch this — the
+  // add-on is the source of truth.
+  triggerSchemaPush(form);
   return {
     formId: formId,
     title: form.getTitle() || 'Untitled form',
@@ -66,19 +71,40 @@ function getEmbedData() {
   };
 }
 
-// Fire-and-forget POST to /api/forms/addon-sync. Errors are logged to
-// Stackdriver only; the modal never blocks or paints on the result.
-function triggerBackgroundSync(formId) {
+// POST the serialized form to /api/forms/addon-sync. Used both on
+// modal open (fire-and-forget — the initial render doesn't wait for
+// it) and via `resyncNow()` below (where the modal does want a yes/no
+// outcome so the status pill can flip to "failed" on error).
+//
+// Returns { ok: boolean, error?: string }. Errors are still logged to
+// Stackdriver so we don't lose the diagnostic.
+function triggerSchemaPush(form) {
   try {
-    UrlFetchApp.fetch(addonSyncUrl(formId), {
+    var payload = buildSyncPayload(form);
+    var res = UrlFetchApp.fetch(addonSyncUrl(form.getId()), {
       method: 'post',
-      contentType: 'application/x-www-form-urlencoded',
-      payload: 'formId=' + encodeURIComponent(formId),
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
       muteHttpExceptions: true,
     });
+    var code = res.getResponseCode();
+    if (code < 200 || code >= 300) {
+      console.error('addon-sync non-2xx:', code, res.getContentText());
+      return { ok: false, error: 'HTTP ' + code };
+    }
+    return { ok: true };
   } catch (e) {
     console.error('addon-sync trigger failed:', e && e.message);
+    return { ok: false, error: (e && e.message) || 'request-failed' };
   }
+}
+
+// Called by Modal.html when the user clicks the "Sync now" link. We
+// re-serialize the form (it may have changed since the modal opened)
+// and push it. Returns the same shape as triggerSchemaPush so the
+// modal can paint success or failure without translating.
+function resyncNow() {
+  return triggerSchemaPush(FormApp.getActiveForm());
 }
 
 // Returns { connected: bool } from our server. Used on modal load and by

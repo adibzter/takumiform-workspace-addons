@@ -77,7 +77,7 @@
             Connect to TakumiForm
           </a>
           <p class="footnote">
-            Free for 7 days. Click <strong>Publish</strong> in Google Forms to start accepting responses.
+            Free for 7 days. Click <strong>Publish</strong> in Google Forms™ to start accepting responses. Google Forms™ is a trademark of Google LLC.
           </p>
 
           <div class="refresh">
@@ -98,6 +98,11 @@
         return `
           <div class="status-row">
             <span class="badge ok">Connected</span>
+            <span class="sync-status" id="sync-status" data-state="ok" data-synced-at="${Date.now()}">
+              <span class="when">Synced just now</span>
+              <span class="sep">·</span>
+              <button class="link" id="resync-btn" type="button">Sync now</button>
+            </span>
           </div>
 
           <p class="label">Embed snippet</p>
@@ -131,7 +136,64 @@
         `;
       }
 
+      // Live-tick the "Synced X ago" label so it stays honest if the user
+      // keeps the modal open past a minute. Cleared on every render so we
+      // don't pile up timers across re-renders.
+      let syncTickTimer = null;
+      function startSyncTick() {
+        if (syncTickTimer) clearInterval(syncTickTimer);
+        syncTickTimer = setInterval(updateSyncedAgoLabel, 30_000);
+      }
+      function updateSyncedAgoLabel() {
+        const node = document.getElementById('sync-status');
+        if (!node || node.dataset.state !== 'ok') return;
+        const when = node.querySelector('.when');
+        if (when) when.textContent = 'Synced ' + syncedAgo(Number(node.dataset.syncedAt));
+      }
+      function syncedAgo(ms) {
+        const diff = Date.now() - ms;
+        const sec = Math.floor(diff / 1000);
+        if (sec < 30) return 'just now';
+        if (sec < 60) return sec + 's ago';
+        const min = Math.floor(sec / 60);
+        if (min < 60) return min + ' min ago';
+        const hr = Math.floor(min / 60);
+        if (hr < 24) return hr + 'h ago';
+        return Math.floor(hr / 24) + 'd ago';
+      }
+      function setSyncState(state, label) {
+        const node = document.getElementById('sync-status');
+        if (!node) return;
+        node.dataset.state = state;
+        const when = node.querySelector('.when');
+        if (when && label) when.textContent = label;
+      }
+
       function wireUp() {
+        startSyncTick();
+
+        const resync = document.getElementById('resync-btn');
+        if (resync) resync.addEventListener('click', () => {
+          resync.disabled = true;
+          setSyncState('syncing', 'Syncing…');
+          google.script.run
+            .withSuccessHandler(res => {
+              resync.disabled = false;
+              if (res && res.ok) {
+                const node = document.getElementById('sync-status');
+                if (node) node.dataset.syncedAt = String(Date.now());
+                setSyncState('ok', 'Synced just now');
+              } else {
+                setSyncState('failed', 'Sync failed — try again');
+              }
+            })
+            .withFailureHandler(() => {
+              resync.disabled = false;
+              setSyncState('failed', 'Sync failed — try again');
+            })
+            .resyncNow();
+        });
+
         document.querySelectorAll('.copy').forEach(btn => {
           btn.addEventListener('click', () => {
             const ta = document.getElementById(btn.dataset.target);
