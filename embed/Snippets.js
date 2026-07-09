@@ -246,6 +246,28 @@ function serializeItem(item) {
       questionId: qid,
     };
   }
+  // T.RATING is guarded because RatingItem is a 2025 FormApp addition —
+  // if Google's runtime predates it the comparison is just false and the
+  // item falls through to the textItem placeholder like before.
+  if (T.RATING && t === T.RATING) {
+    var rat = item.asRatingItem();
+    return {
+      json: Object.assign({}, base, {
+        questionItem: {
+          question: {
+            questionId: qid,
+            required: !!rat.isRequired(),
+            ratingQuestion: {
+              ratingScaleLevel: rat.getRatingScaleLevel(),
+              iconType: String(safeGet(function () { return rat.getRatingIcon(); }) || 'STAR'),
+            },
+          },
+        },
+      }),
+      type: 'question',
+      questionId: qid,
+    };
+  }
   if (t === T.DATE) {
     var d = item.asDateItem();
     return {
