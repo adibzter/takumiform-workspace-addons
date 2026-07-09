@@ -107,6 +107,16 @@ function resyncNow() {
   return triggerSchemaPush(FormApp.getActiveForm());
 }
 
+// Lightweight poll target for the modal's disconnected state. Returns
+// { connected: bool } and nothing else — crucially it does NOT push the
+// schema (unlike getEmbedData), so the modal can call it every few
+// seconds while the user finishes connecting in the other tab without
+// hammering /api/forms/addon-sync. Once it flips to connected, the modal
+// makes a single getEmbedData() call to load the full connected view.
+function checkConnection() {
+  return fetchStatus(FormApp.getActiveForm().getId());
+}
+
 // Returns { connected: bool } from our server. Used on modal load and by
 // the "Refresh" link after the user has connected in a separate tab.
 function fetchStatus(formId) {

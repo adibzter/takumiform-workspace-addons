@@ -31,6 +31,10 @@ Each system runs in a different host. The add-on modal runs *inside* Google's Fo
 
 If we share a stylesheet across hosts, every UI tweak risks clobbering an unrelated surface. Each host owns its tokens.
 
+## Google's CSS package
+
+Every modal loads Google's editor add-on CSS package (`https://ssl.gstatic.com/docs/script/css/add-ons1.css`) **before** `Stylesheet.html`. Google's Marketplace review recommends it, and it gives native elements we don't explicitly style a Forms-editor baseline. Load order matters: our stylesheet comes second so TakumiForm tokens win wherever the two overlap. `Stylesheet.html` includes a small `button` reset to neutralize the package's fixed button heights/gradients on our class-styled buttons — keep it if you copy the file into a new add-on.
+
 ## Tokens
 
 Defined in `Stylesheet.html` as CSS variables. Use them via `var(--tk-*)`; never hard-code a hex.
@@ -230,6 +234,7 @@ In your add-on's `Modal.html`:
 <html>
   <head>
     <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
     <?!= include('Stylesheet') ?>
   </head>
   <body>

@@ -2,6 +2,12 @@
 <html>
   <head>
     <base target="_top">
+    <!-- Google's editor add-on CSS package loads first as the baseline
+         (a Marketplace review recommendation — it keeps native elements
+         consistent with the Forms editor). Our Stylesheet then layers
+         TakumiForm tokens and components on top, so it wins wherever
+         the two overlap. -->
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
     <?!= include('Stylesheet') ?>
   </head>
   <body>
@@ -33,9 +39,48 @@
       }
 
       function render(d) {
+        // Any in-flight connection poll belongs to the previous render.
+        // Stop it here; wireUp() restarts polling only if we land back on
+        // the disconnected state.
+        stopPolling();
         root.innerHTML = d.connected ? renderConnected(d) : renderDisconnected(d);
         wireUp();
         resizeModal();
+      }
+
+      // While the modal sits in the disconnected state, the user connects
+      // in a separate browser tab. Rather than make them come back and
+      // click a refresh button (the old behavior — Google's reviewer
+      // connected, saw no change, and flagged it), we poll our status
+      // endpoint and flip to the connected view automatically the moment
+      // the form shows up. checkConnection() is the cheap server call
+      // that only reads status and never re-pushes the schema.
+      let pollTimer = null;
+      function startPolling() {
+        stopPolling();
+        var elapsed = 0;
+        var INTERVAL = 4000;
+        var MAX = 10 * 60 * 1000; // give up after 10 min of an open modal
+        pollTimer = setInterval(function () {
+          elapsed += INTERVAL;
+          if (elapsed > MAX) { stopPolling(); return; }
+          google.script.run
+            .withSuccessHandler(function (s) {
+              if (s && s.connected) {
+                stopPolling();
+                // Load the full connected payload (snippet, URLs) once.
+                google.script.run
+                  .withSuccessHandler(render)
+                  .withFailureHandler(function () {})
+                  .getEmbedData();
+              }
+            })
+            .withFailureHandler(function () { /* transient — keep polling */ })
+            .checkConnection();
+        }, INTERVAL);
+      }
+      function stopPolling() {
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
       }
 
       // Apps Script modals can't size themselves to content automatically.
@@ -77,11 +122,13 @@
             Connect to TakumiForm
           </a>
           <p class="footnote">
-            Free for 7 days. Click <strong>Publish</strong> in Google Forms™ to start accepting responses. Google Forms™ is a trademark of Google LLC.
+            Opens in a new tab. Sign in there, then come back here — <strong>this window updates on its own</strong> once you're connected. Free for 7 days.
           </p>
 
           <div class="refresh">
-            <button class="link" id="refresh">I've connected — refresh</button>
+            <span class="poll-status" id="poll-status">Waiting for you to connect…</span>
+            <span class="sep">·</span>
+            <button class="link" id="refresh">Refresh now</button>
           </div>
         `;
       }
@@ -115,6 +162,10 @@
             <a class="btn" href="${escapeHtml(d.previewUrl)}" target="_blank">Preview</a>
             <a class="btn" href="${escapeHtml(d.customizeUrl)}" target="_blank">Customize</a>
           </div>
+
+          <p class="footnote">
+            Not accepting responses yet? Click <strong>Publish</strong> in Google Forms™ to turn the form on. Google Forms™ is a trademark of Google LLC.
+          </p>
 
           <details>
             <summary>Iframe option (no JavaScript)</summary>
@@ -208,6 +259,11 @@
             }, 1500);
           });
         });
+
+        // Disconnected state: auto-poll so the modal flips to connected on
+        // its own once the user finishes connecting in the other tab. The
+        // manual Refresh button below stays as a fallback.
+        if (document.getElementById('connect-btn')) startPolling();
 
         // Disconnected-state Refresh: user has connected in another tab
         // and wants the modal to flip to the connected view. Re-fetches

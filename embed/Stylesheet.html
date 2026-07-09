@@ -50,6 +50,20 @@
     --tk-radius-pill:  999px;
   }
 
+  /* Modal.html loads Google's add-on CSS package (add-ons1.css) before
+     this file, per the Marketplace review recommendation. It sets fixed
+     heights, gradients, and Arial on bare <button>; neutralize those so
+     our class-styled buttons (.btn, .copy, .link) keep their own metrics.
+     Everything we don't override inherits Google's baseline — that's the
+     point of loading the package. */
+  button {
+    font-family: inherit;
+    height: auto;
+    line-height: normal;
+    box-shadow: none;
+    background-image: none;
+  }
+
   /* Body — Google Sans matches the surrounding Forms editor type. Don't
      swap to a custom font; the sidebar feels alien if you do. */
   body {
@@ -215,6 +229,8 @@
   .loading, .error { font-size: 13px; color: var(--tk-text-subtle); padding: 32px 8px; text-align: center; }
   .error { color: var(--tk-danger); }
   .refresh { margin-top: 14px; text-align: center; }
+  .refresh .poll-status { font-size: 12px; color: var(--tk-text-subtle); }
+  .refresh .sep { color: var(--tk-divider); margin: 0 6px; }
 
   /* Inline error banner — surfaces auto-publish failures at the top
      of the modal. Success is silent; the modal's own loading/connected

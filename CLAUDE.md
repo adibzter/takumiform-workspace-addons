@@ -54,9 +54,12 @@ Every add-on uses the same tokens, components, layout container, and copy patter
 
 **Sync lives in the web app only.** The modal does not expose a Sync button or "Synced X ago" timestamp. When the modal opens and the form is connected, `Code.js` fires a background POST to `/api/forms/addon-sync` and ignores the result — failures land in Stackdriver, never in the user's face. The dashboard's "Sync now" button is the single visible knob for forcing a refresh; the dashboard's 1-hour auto-sync covers the passive case. Centralizing sync this way means future add-ons don't each ship their own sync UI.
 
-The shared CSS ships as `Stylesheet.html` in each add-on (a deliberate copy, not an import). Modal.html includes it via Apps Script templating:
+**The disconnected modal auto-polls for connection.** A first-time user clicks "Connect to TakumiForm" (opens takumiform.com in a new tab), signs in, then returns to the form. Rather than make them click a refresh button, the modal polls `checkConnection()` (a cheap status-only server call in `Code.js` that, unlike `getEmbedData`, never re-pushes the schema) every 4s and flips to the connected view automatically the moment the form shows up. Manual "Refresh now" stays as a fallback; polling gives up after 10 min. This fixed a Marketplace review rejection — the reviewer connected, saw the modal not update, and flagged it. When adding a new add-on with a connect step, copy this poll loop from [embed/Modal.html](embed/Modal.html).
+
+The shared CSS ships as `Stylesheet.html` in each add-on (a deliberate copy, not an import). Modal.html loads Google's editor add-on CSS package first (a Marketplace review recommendation), then includes ours via Apps Script templating so TakumiForm tokens win where they overlap:
 
 ```html
+<link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
 <?!= include('Stylesheet') ?>
 ```
 
