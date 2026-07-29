@@ -24,7 +24,7 @@ function iframeSnippet(formId) {
   ].join('\n');
 }
 
-// The add-on does its own publishing via REST (see publishActiveForm in
+// The add-on publishes the form itself (see publishActiveForm in
 // Code.js), so the connect URL stays simple — the web app just imports
 // the schema. No publish flag needed in the URL.
 function connectUrl(formId) {
@@ -101,15 +101,9 @@ function buildSyncPayload(form) {
         description: form.getDescription() || '',
       },
       items: serializedItems,
-      // FormApp doesn't expose `publishState` directly. `isAcceptingResponses`
-      // covers the practical case (closed forms refuse submissions); we
-      // optimistically mark `isPublished` true because the user is using
-      // the add-on, which only attaches to existing forms. If they haven't
-      // clicked Publish in Google Forms, the public formResponse endpoint
-      // will reject submissions and the renderer will surface that error.
       publishSettings: {
         publishState: {
-          isPublished: true,
+          isPublished: readIsPublished(form),
           isAcceptingResponses: !!form.isAcceptingResponses(),
         },
       },
@@ -119,6 +113,19 @@ function buildSyncPayload(form) {
     questionIds: questionIds,
     pageCount: pageCount,
   };
+}
+
+// True publish state, or true for forms too old to have one. isPublished()
+// throws on those, and the renderer's own isPublished() treats a missing
+// publishState the same way — accepting-responses is the only real signal
+// there, and it's reported separately.
+function readIsPublished(form) {
+  try {
+    if (!form.supportsAdvancedResponderPermissions()) return true;
+    return !!form.isPublished();
+  } catch (_) {
+    return true;
+  }
 }
 
 // Convert one FormApp Item to the REST-shaped JSON the renderer expects.

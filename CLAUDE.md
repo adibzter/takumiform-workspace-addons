@@ -56,6 +56,8 @@ Every add-on uses the same tokens, components, layout container, and copy patter
 
 **The disconnected modal auto-polls for connection.** A first-time user clicks "Connect to TakumiForm" (opens takumiform.com in a new tab), signs in, then returns to the form. Rather than make them click a refresh button, the modal polls `checkConnection()` (a cheap status-only server call in `Code.js` that, unlike `getEmbedData`, never re-pushes the schema) every 4s and flips to the connected view automatically the moment the form shows up. Manual "Refresh now" stays as a fallback; polling gives up after 10 min. This fixed a Marketplace review rejection — the reviewer connected, saw the modal not update, and flagged it. When adding a new add-on with a connect step, copy this poll loop from [embed/Modal.html](embed/Modal.html).
 
+**The form is published for the user, silently.** `getEmbedData()` calls `publishActiveForm()` before pushing the schema, so by the time the modal paints, the form accepts responses. Success is invisible — no confirmation, no banner — because a user who is grabbing an embed snippet has already decided to collect responses and doesn't need to be told a prerequisite was met. Only a hard failure renders (the `.publish-status--error` banner), and only then does the modal fall back to telling the user to click Google's own Publish button. Note `setPublished()` and `isPublished()` **throw** on forms predating the 2024 publish workflow, so the `supportsAdvancedResponderPermissions()` guard is required; those forms report `unsupported`, which is treated as a non-event rather than an error.
+
 The shared CSS ships as `Stylesheet.html` in each add-on (a deliberate copy, not an import). Modal.html loads Google's editor add-on CSS package first (a Marketplace review recommendation), then includes ours via Apps Script templating so TakumiForm tokens win where they overlap:
 
 ```html
@@ -98,7 +100,7 @@ To create a new script bound to a specific Form (only way to test classic Forms 
 
 Each listing needs:
 - A GCP project
-- OAuth consent screen + brand verification. Every add-on (including `embed`) now holds only non-sensitive scopes (`forms.currentonly`, `script.container.ui`, `script.external_request`), so the verification bar is the lower "brand only" review — not the sensitive-scope justification the web app needs for `forms.body.readonly`. The embed add-on previously held `forms.body` for auto-publish via REST; that's been dropped (users click Google's own Publish button instead).
+- OAuth consent screen + brand verification. Every add-on (including `embed`) holds only non-sensitive scopes (`forms.currentonly`, `script.container.ui`, `script.external_request`), so the verification bar is the lower "brand only" review — not the sensitive-scope justification the web app needs for `forms.body.readonly`. **Keep it that way.** Auto-publish is the one feature that has tempted us over the line: it once used the REST `setPublishSettings` endpoint and the sensitive `forms.body` scope, was dropped for that reason, and is now back via FormApp's `setPublished()` under `forms.currentonly`. If a future feature seems to need a sensitive scope, check the FormApp reference first — it keeps absorbing REST-only capabilities.
 - Marketplace SDK config
 - Screenshots, privacy policy URL, terms URL
 - Google review

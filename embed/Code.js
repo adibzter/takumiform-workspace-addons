@@ -53,6 +53,9 @@ function getEmbedData() {
   const form = FormApp.getActiveForm();
   const formId = form.getId();
   const status = fetchStatus(formId);
+  // Publish before pushing the schema so the payload reports the
+  // post-publish state rather than the state we just changed.
+  const publish = publishActiveForm(form);
   // Always push the schema, connected or not. If connected → updates the
   // existing forms row. If not connected → stashes payload in a stage
   // cache that /dashboard?form=<id> picks up after sign-in. Either way,
@@ -63,12 +66,46 @@ function getEmbedData() {
     formId: formId,
     title: form.getTitle() || 'Untitled form',
     connected: status.connected,
+    publish: publish,
     script: scriptSnippet(formId),
     iframe: iframeSnippet(formId),
     connectUrl: connectUrl(formId),
     previewUrl: previewUrl(formId),
     customizeUrl: customizeUrl(formId)
   };
+}
+
+// Publishes the active form using the 2024 Forms publish workflow. A
+// form has to be published before respondents can submit, and a user
+// who embeds our snippet has clearly decided to collect responses — so
+// we do it for them instead of leaving a "click Publish" instruction.
+//
+// This runs under `forms.currentonly`, the scope we already hold.
+// FormApp gained setPublished()/isPublished() after the publish
+// workflow shipped; before that this was REST-only and needed the
+// sensitive `forms.body` scope, which is why an earlier version of
+// this function was deleted. Nothing sensitive is needed now.
+//
+// Both methods throw on forms too old to support publishing, so the
+// supportsAdvancedResponderPermissions() guard is required, not
+// defensive. Those forms have no publish state at all — accepting
+// responses is the whole story — which is why `unsupported` is a
+// distinct outcome from `ok` and not an error.
+//
+// Returns { ok: true } | { ok: false, unsupported: true } |
+// { ok: false, error }. The modal only interrupts the user on the
+// last one.
+function publishActiveForm(form) {
+  try {
+    if (!form.supportsAdvancedResponderPermissions()) {
+      return { ok: false, unsupported: true };
+    }
+    if (!form.isPublished()) form.setPublished(true);
+    return { ok: true };
+  } catch (e) {
+    console.error('auto-publish failed:', e && e.message);
+    return { ok: false, error: (e && e.message) || 'publish-failed' };
+  }
 }
 
 // POST the serialized form to /api/forms/addon-sync. Used both on

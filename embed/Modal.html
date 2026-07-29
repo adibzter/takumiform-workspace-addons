@@ -17,14 +17,10 @@
       const root = document.getElementById('root');
 
       // Single call on modal open: fetch connection + status so we know
-      // which state to render. The add-on used to also auto-publish the
-      // form via the Forms REST API, but we dropped the `forms.body`
-      // scope to keep the Marketplace verification bar low (only
-      // `forms.currentonly` + script.* now — all non-sensitive). The
-      // user is expected to click Publish in Google Forms themselves;
-      // we surface that requirement clearly in both the welcome and
-      // connected states, and the renderer at /f/<id> shows a "form
-      // isn't published yet" page if they miss it.
+      // which state to render. getEmbedData() also publishes the form as
+      // a side effect and reports the outcome in `d.publish`, so there's
+      // no second round trip for it. Only a hard failure is surfaced —
+      // on success the user never learns publishing was a step.
       load();
 
       function load() {
@@ -43,9 +39,24 @@
         // Stop it here; wireUp() restarts polling only if we land back on
         // the disconnected state.
         stopPolling();
-        root.innerHTML = d.connected ? renderConnected(d) : renderDisconnected(d);
+        root.innerHTML = publishBanner(d.publish)
+          + (d.connected ? renderConnected(d) : renderDisconnected(d));
         wireUp();
         resizeModal();
+      }
+
+      // Publishing succeeded, or the form is old enough not to have a
+      // publish state — either way there's nothing for the user to do,
+      // so stay quiet. We only speak up when the call actually errored,
+      // because then respondents will hit a dead form and the fix is
+      // Google's own Publish button.
+      function publishBanner(p) {
+        if (!p || p.ok || p.unsupported) return '';
+        return `
+          <div class="publish-status publish-status--error">
+            Couldn't publish this form automatically. Click <strong>Publish</strong> in Google Forms™ so respondents can submit.
+          </div>
+        `;
       }
 
       // While the modal sits in the disconnected state, the user connects
@@ -99,11 +110,8 @@
       // not the form's title or a "not connected" label. Keep the
       // checklist short; long lists get skimmed past.
       //
-      // We surface the "make sure your form is Published" reminder
-      // because we no longer auto-publish via REST (forms.body scope
-      // dropped for verification simplicity). The user has to click
-      // Google Forms' own Publish button before respondents can
-      // submit — same one-click action it would be anyway.
+      // No publish instructions here: the form was already published by
+      // the time this rendered. publishBanner() covers the rare failure.
       function renderDisconnected(d) {
         return `
           <p class="welcome-title">Embed this form on your site</p>
@@ -164,7 +172,10 @@
           </div>
 
           <p class="footnote">
-            Not accepting responses yet? Click <strong>Publish</strong> in Google Forms™ to turn the form on. Google Forms™ is a trademark of Google LLC.
+            ${d.publish && d.publish.ok
+              ? 'Your form is published and live.'
+              : 'Not accepting responses yet? Click <strong>Publish</strong> in Google Forms™ to turn the form on.'}
+            Google Forms™ is a trademark of Google LLC.
           </p>
 
           <details>
