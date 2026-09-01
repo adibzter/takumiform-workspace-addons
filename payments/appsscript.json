@@ -13,7 +13,7 @@
   "addOns": {
     "common": {
       "name": "TakumiForm — Payments",
-      "logoUrl": "https://takumiform.com/addon/payments/logo.png",
+      "logoUrl": "https://takumiform.com/brand/logo-128.png",
       "useLocaleFromApp": true,
       "homepageTrigger": {
         "runFunction": "onHomepage",

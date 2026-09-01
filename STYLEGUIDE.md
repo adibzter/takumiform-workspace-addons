@@ -1,6 +1,6 @@
 # TakumiForm Add-on UI Standard
 
-The visual + interaction standard every TakumiForm Workspace add-on follows. Five add-ons, one feel.
+The visual + interaction standard every TakumiForm add-on surface follows. Multiple features, one add-on, one feel.
 
 The standard lives as `Stylesheet.html` in each add-on (a deliberate near-duplicate per [CLAUDE.md](CLAUDE.md)'s "copy-paste between add-ons is fine" rule). When you tweak it, copy the change to every sibling — there's no shared package, by design.
 

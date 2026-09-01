@@ -1,20 +1,20 @@
 # TakumiForm — Google Workspace Add-ons
 
-Five separate Google Forms add-ons, one per Marketplace listing keyword. The "one product per keyword" strategy mirrors how Formfacade ships 6+ Marketplace listings.
+One Google Forms add-on carrying multiple TakumiForm features. The published Marketplace listing is [*TakumiForm — Embed in Website*](https://workspace.google.com/marketplace/app/takumiform_embed_in_website/61166924939), built from `embed/`. The original plan was five listings, one per Marketplace keyword (mirroring Formfacade's 6+ listings); we've consolidated — new features ship inside the published listing rather than as separate add-ons.
 
-| Folder | Marketplace listing | Tier |
+| Folder | Feature | Status |
 | --- | --- | --- |
-| [embed/](embed/) | "Embed Google Forms" | 1 |
-| [file-upload/](file-upload/) | "Google Forms File Upload (No Login)" | 1 |
-| [payments/](payments/) | "Google Forms Payments" | 2 |
-| [quiz-scoring/](quiz-scoring/) | "Google Forms Quiz Scoring" | 2 |
-| [whatsapp-delivery/](whatsapp-delivery/) | "Google Forms to WhatsApp" | 2 |
+| [embed/](embed/) | Embed on any website (the published add-on) | Live |
+| [file-upload/](file-upload/) | File upload without Google sign-in | Scaffold, to be folded into `embed/` |
+| [payments/](payments/) | Payments in the form | Scaffold, to be folded into `embed/` |
+| [quiz-scoring/](quiz-scoring/) | Quiz scoring | Scaffold, to be folded into `embed/` |
+| [whatsapp-delivery/](whatsapp-delivery/) | Response delivery to WhatsApp | Scaffold, to be folded into `embed/` |
 
-All add-ons share one backend (TakumiForm) — each add-on is the install funnel and the editor entry point. The actual customization, embed snippet, response handling, and payments happen on `takumiform.com` (sibling repo at [../takumiform/](../takumiform/)).
+Everything shares one backend (TakumiForm) — the add-on is the install funnel and the editor entry point. The actual customization, embed snippet, response handling, and payments happen on `takumiform.com` (sibling repo at [../takumiform/](../takumiform/)).
 
-**Customize is not a separate add-on.** It's part of every TakumiForm plan, accessed via the dashboard on takumiform.com. The Embed Marketplace listing's description covers "customize Google Forms" as a keyword — installing Embed lands the user in the customize editor. Branching is similarly a feature of the Embed product, not a standalone add-on (Formfacade does the same).
+**Customize is not a separate feature entry point.** It's part of every TakumiForm plan, accessed via the dashboard on takumiform.com. The published listing's description covers "customize Google Forms" as a keyword — installing it lands the user in the customize editor. Branching is similarly a feature inside the customize editor, not a standalone product (Formfacade does the same).
 
-Pricing is bundled on takumiform.com — installing any of the five listings gets the user to the same Bundle tier (or one of the per-add-on tiers if they want just one). The split exists for Marketplace SEO, not for billing.
+Pricing stays per-feature on takumiform.com — one install unlocks the account, then the user buys the add-on SKUs they need (or the Bundle). The consolidation changes the Marketplace shape, not billing.
 
 ## Tech stack
 
@@ -33,9 +33,9 @@ Pricing is bundled on takumiform.com — installing any of the five listings get
 
 The form owner opens the add-on briefly to do one thing — grab the snippet, sync, configure — then closes it. Sidebars are good for persistence-while-editing, which we don't need. Modals get more attention on first run and have more room.
 
-### Why one add-on per keyword
+### Why one add-on, not five
 
-Formfacade has 6+ Marketplace listings, one per SEO term ("customize", "embed", "file upload", etc.). Each listing ranks for its own keyword in the Workspace Marketplace search. We mirror that strategy. All five listings point users back to the same takumiform.com account.
+Formfacade ships 6+ Marketplace listings, one per SEO term, and we originally planned to mirror that. Consolidating won: each new listing needs its own GCP project, consent screen, brand verification, and Google review, and splits users across installs. A feature added to the live listing is one review surface and one install. Keyword coverage moves to the listing copy and takumiform.com's SEO pages instead.
 
 ## Per-add-on layout
 
@@ -49,7 +49,7 @@ Formfacade has 6+ Marketplace listings, one per SEO term ("customize", "embed", 
 └── .clasp.json.example copy to .clasp.json with your scriptId (gitignored)
 ```
 
-Standard tokens, components, and copy patterns live in [STYLEGUIDE.md](STYLEGUIDE.md) so all five listings feel like one product.
+Standard tokens, components, and copy patterns live in [STYLEGUIDE.md](STYLEGUIDE.md) so every feature's UI feels like one product.
 
 ## Working on an add-on
 
@@ -72,7 +72,7 @@ To create a new script bound to a specific Form (only way to test classic Forms 
 ## Current state
 
 - **embed/** — fully built out as a snippet generator with status check and deep links into the TakumiForm dashboard / customize editor. Deployed against a test form. Auto-publishes the form on modal open via `FormApp` `setPublished()` — no sensitive scope, no user step. Forms too old to support publishing fall back to the "click Publish yourself" footnote.
-- **file-upload/**, **payments/**, **quiz-scoring/**, **whatsapp-delivery/** — scaffolded with the old (broken) CardService + Workspace Add-on manifest. Need conversion to the Editor Add-on pattern shown in `embed/` before they can be pushed.
+- **file-upload/**, **payments/**, **quiz-scoring/**, **whatsapp-delivery/** — scaffolded with the old (broken) CardService + Workspace Add-on manifest. Per the consolidation they won't be pushed as their own Apps Script projects; each feature gets folded into `embed/` when it ships, and its scaffold folder deleted.
 
 ## Shared deep-link contract
 
@@ -80,4 +80,4 @@ Every add-on links back to `https://takumiform.com/dashboard?form=<googleFormId>
 
 ## Marketplace publishing
 
-Not yet done. Each listing needs a GCP project, OAuth consent screen + brand verification, Marketplace SDK config, screenshots, privacy/terms URLs, and Google review. **Every add-on now holds only non-sensitive scopes** (`forms.currentonly`, `script.container.ui`, `script.external_request`, `script.locale`), so each listing's review is the lower "brand verification" bar — not the multi-week sensitive-scope review. Start the consent-screen verification on the web app first (it still has one sensitive scope, `forms.body.readonly`, and a 2–4 week lead time); the add-on listings can follow quickly behind.
+**Done for the one listing that matters**: *TakumiForm — Embed in Website*, published ~15 July 2026. No further listings are planned — new features land inside it. The add-on holds only non-sensitive scopes (`forms.currentonly`, `script.container.ui`, `script.external_request`), which kept its review at the lower "brand verification" bar. Renaming or re-scoping the live listing triggers an update review, so batch such changes. Details and history in [CLAUDE.md](CLAUDE.md) → "Marketplace publishing".

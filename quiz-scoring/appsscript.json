@@ -13,7 +13,7 @@
   "addOns": {
     "common": {
       "name": "TakumiForm — Quiz Scoring",
-      "logoUrl": "https://takumiform.com/addon/quiz-scoring/logo.png",
+      "logoUrl": "https://takumiform.com/brand/logo-128.png",
       "useLocaleFromApp": true,
       "homepageTrigger": {
         "runFunction": "onHomepage",
