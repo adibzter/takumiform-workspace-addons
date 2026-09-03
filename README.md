@@ -14,7 +14,7 @@ Everything shares one backend (TakumiForm) — the add-on is the install funnel 
 
 **Customize is not a separate feature entry point.** It's part of every TakumiForm plan, accessed via the dashboard on takumiform.com. The published listing's description covers "customize Google Forms" as a keyword — installing it lands the user in the customize editor. Branching is similarly a feature inside the customize editor, not a standalone product (Formfacade does the same).
 
-Pricing stays per-feature on takumiform.com — one install unlocks the account, then the user buys the add-on SKUs they need (or the Bundle). The consolidation changes the Marketplace shape, not billing.
+Pricing consolidated the same way (Sept 2026): one install unlocks the account, and takumiform.com sells one plan — Takumi Starter / Pro / Business — with every feature included. No per-add-on SKUs.
 
 ## Tech stack
 

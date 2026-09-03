@@ -10,7 +10,7 @@ Responses still land in the user's native Google Forms responses tab (and linked
 
 ## Why one add-on, not five
 
-The original strategy mirrored Formfacade's 6+ Marketplace listings, one per SEO term ("customize", "embed", "file upload", etc.), each ranking for its own keyword in Marketplace search. We've consolidated instead: every new listing costs a GCP project, a consent screen, brand verification, and a Google review, and splits users across installs — while a feature added to the live listing is one review surface, one install, and one Extensions menu entry. Keyword coverage moves to the listing's title/description and the web app's SEO pages rather than separate apps. Note this changes the *Marketplace* shape only — takumiform.com still prices features as per-add-on SKUs plus the Bundle.
+The original strategy mirrored Formfacade's 6+ Marketplace listings, one per SEO term ("customize", "embed", "file upload", etc.), each ranking for its own keyword in Marketplace search. We've consolidated instead: every new listing costs a GCP project, a consent screen, brand verification, and a Google review, and splits users across installs — while a feature added to the live listing is one review surface, one install, and one Extensions menu entry. Keyword coverage moves to the listing's title/description and the web app's SEO pages rather than separate apps. Pricing consolidated the same way (Sept 2026): takumiform.com sells one plan — Takumi Starter / Pro / Business — with every feature included; there are no per-add-on SKUs anymore.
 
 ## Forms add-ons are NOT Workspace add-ons
 

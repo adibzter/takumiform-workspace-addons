@@ -65,10 +65,11 @@ function buildSyncPayload(form) {
   var serializedItems = [];
   var questionIds = [];
   var pageCount = 1;
+  var isQuiz = !!safeGet(function () { return form.isQuiz(); });
 
   for (var i = 0; i < items.length; i++) {
     var it = items[i];
-    var serialized = serializeItem(it);
+    var serialized = serializeItem(it, isQuiz);
     if (!serialized) continue;
     serializedItems.push(serialized.json);
     if (serialized.type === 'pageBreak') {
@@ -96,6 +97,7 @@ function buildSyncPayload(form) {
     formId: form.getId(),
     schema: {
       formId: form.getId(),
+      isQuiz: isQuiz,
       info: {
         title: form.getTitle() || '',
         description: form.getDescription() || '',
@@ -128,11 +130,33 @@ function readIsPublished(form) {
   }
 }
 
+// Quiz grading for a choice-based item: points plus the values marked
+// correct. Only read when the form is a quiz. Everything is guarded —
+// getPoints()/isCorrectAnswer() exist on quiz-capable items but this code
+// may run against old runtimes or item states that throw. Returns null
+// when there's nothing gradable, so non-quiz payloads are byte-identical
+// to before. Short answer is deliberately absent: FormApp doesn't expose
+// text correct answers, so those stay manually graded (as on Google).
+function choiceGrading(typedItem, choiceArr) {
+  var points = safeGet(function () { return typedItem.getPoints(); });
+  var correct = [];
+  for (var i = 0; i < choiceArr.length; i++) {
+    if (safeGet(function () { return choiceArr[i].isCorrectAnswer(); })) {
+      correct.push(choiceArr[i].getValue());
+    }
+  }
+  if (!points && correct.length === 0) return null;
+  return { points: points || 0, correctValues: correct };
+}
+
 // Convert one FormApp Item to the REST-shaped JSON the renderer expects.
 // Returns `{ json, type, questionId?, rowIds? }` or null when the item
 // type isn't one we render (we ship it through as a textItem placeholder
 // so the renderer doesn't drop everything below it).
-function serializeItem(item) {
+// `isQuiz` gates the per-question `grading` block (points + correct
+// values). That block is consumed server-side by the web app's scoring —
+// the renderer never prints it into HTML.
+function serializeItem(item, isQuiz) {
   var T = FormApp.ItemType;
   var base = {
     itemId: String(item.getId()),
@@ -184,50 +208,23 @@ function serializeItem(item) {
       questionId: qid,
     };
   }
-  if (t === T.MULTIPLE_CHOICE) {
-    var mc = item.asMultipleChoiceItem();
-    return {
-      json: Object.assign({}, base, {
-        questionItem: {
-          question: {
-            questionId: qid,
-            required: !!mc.isRequired(),
-            choiceQuestion: { type: 'RADIO', options: choices(mc.getChoices()) },
-          },
-        },
-      }),
-      type: 'question',
+  if (t === T.MULTIPLE_CHOICE || t === T.CHECKBOX || t === T.LIST) {
+    var choiceType = t === T.MULTIPLE_CHOICE ? 'RADIO' : (t === T.CHECKBOX ? 'CHECKBOX' : 'DROP_DOWN');
+    var typed = t === T.MULTIPLE_CHOICE ? item.asMultipleChoiceItem()
+              : t === T.CHECKBOX ? item.asCheckboxItem()
+              : item.asListItem();
+    var choiceArr = typed.getChoices();
+    var question = {
       questionId: qid,
+      required: !!typed.isRequired(),
+      choiceQuestion: { type: choiceType, options: choices(choiceArr) },
     };
-  }
-  if (t === T.CHECKBOX) {
-    var cb = item.asCheckboxItem();
+    if (isQuiz) {
+      var grading = choiceGrading(typed, choiceArr);
+      if (grading) question.grading = grading;
+    }
     return {
-      json: Object.assign({}, base, {
-        questionItem: {
-          question: {
-            questionId: qid,
-            required: !!cb.isRequired(),
-            choiceQuestion: { type: 'CHECKBOX', options: choices(cb.getChoices()) },
-          },
-        },
-      }),
-      type: 'question',
-      questionId: qid,
-    };
-  }
-  if (t === T.LIST) {
-    var ls = item.asListItem();
-    return {
-      json: Object.assign({}, base, {
-        questionItem: {
-          question: {
-            questionId: qid,
-            required: !!ls.isRequired(),
-            choiceQuestion: { type: 'DROP_DOWN', options: choices(ls.getChoices()) },
-          },
-        },
-      }),
+      json: Object.assign({}, base, { questionItem: { question: question } }),
       type: 'question',
       questionId: qid,
     };
