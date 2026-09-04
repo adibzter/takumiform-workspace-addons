@@ -6,7 +6,7 @@ const CDN_URL = 'https://takumiform.com/embed.js';
 function onOpen(e) {
   FormApp.getUi()
     .createAddonMenu()
-    .addItem('Get embed code', 'showModal')
+    .addItem('Open TakumiForm', 'showModal')
     .addToUi();
 }
 
@@ -26,7 +26,7 @@ function showModal() {
     .evaluate()
     .setWidth(560)
     .setHeight(500);
-  FormApp.getUi().showModalDialog(html, 'TakumiForm - Embed in Website');
+  FormApp.getUi().showModalDialog(html, 'TakumiForm');
 }
 
 // Used by Modal.html via `<?!= include('Stylesheet') ?>` to inline the
@@ -71,7 +71,8 @@ function getEmbedData() {
     iframe: iframeSnippet(formId),
     connectUrl: connectUrl(formId),
     previewUrl: previewUrl(formId),
-    customizeUrl: customizeUrl(formId)
+    customizeUrl: customizeUrl(formId),
+    uploadsUrl: uploadsUrl(formId)
   };
 }
 

@@ -50,6 +50,12 @@ function customizeUrl(formId) {
   return APP_BASE + '/dashboard?form=' + encodeURIComponent(formId) + '&feature=customize';
 }
 
+// Same resolve-and-302 trick as customizeUrl, landing on the File upload
+// tab (/dashboard/forms/<localId>/uploads).
+function uploadsUrl(formId) {
+  return APP_BASE + '/dashboard?form=' + encodeURIComponent(formId) + '&feature=file-upload';
+}
+
 function statusUrl(formId) {
   return APP_BASE + '/api/forms/status?formId=' + encodeURIComponent(formId);
 }

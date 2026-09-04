@@ -95,7 +95,7 @@ To create a new script bound to a specific Form (only way to test classic Forms 
 
 ## Current state
 
-- **embed/** — built out as a real snippet generator. Deployed against test form bound to script `10ulqZJvGWQtZehNsBsiB33e_lxcWRa825NL__5Y6DrjNhH6ZEbl-pYKE`.
+- **embed/** — built out as a real snippet generator. Deployed against test form bound to script `10ulqZJvGWQtZehNsBsiB33e_lxcWRa825NL__5Y6DrjNhH6ZEbl-pYKE`. The menu item is **Open TakumiForm** and the dialog title is plain **TakumiForm** (MARKETPLACE.md §5–7, applied Sept 2026); the connected view links Preview / Customize / File upload, the last via `uploadsUrl` → `feature=file-upload`. The web app's dashboard onboarding and docs quote that menu label, so push this project whenever the label changes.
 - **file-upload/**, **payments/**, **quiz-scoring/**, **whatsapp-delivery/** — still scaffolded with the old (broken) CardService + Workspace Add-on shape, and per the consolidation they will never be pushed as their own Apps Script projects. When one of these features ships, its UI and server calls get folded into `embed/` (a new tab or view in that modal), and the scaffold folder gets deleted.
 
 ## Marketplace publishing

@@ -114,15 +114,16 @@
       // the time this rendered. publishBanner() covers the rare failure.
       function renderDisconnected(d) {
         return `
-          <p class="welcome-title">Embed this form on your site</p>
+          <p class="welcome-title">Do more with this form</p>
           <p class="lead">
-            Connect once. Paste a snippet. Done.
+            Connect once. Customize, embed, and collect files. Done.
           </p>
 
           <ul class="checklist">
-            <li>Works on Webflow, WordPress, plain HTML</li>
-            <li>Match your site's colors, fonts, logo</li>
-            <li>Drop the Google watermark</li>
+            <li>Embed it on Webflow, WordPress, any site</li>
+            <li>Match your colors, fonts, and logo</li>
+            <li>Accept file uploads, no Google sign-in needed</li>
+            <li>Auto-grade quizzes with instant scores</li>
             <li>Auto-syncs when you edit the form</li>
           </ul>
 
@@ -130,7 +131,7 @@
             Connect to TakumiForm
           </a>
           <p class="footnote">
-            Opens in a new tab. Sign in there, then come back here — <strong>this window updates on its own</strong> once you're connected. Free for 7 days.
+            Opens in a new tab. Sign in there, then come back here. <strong>This window updates on its own</strong> once you're connected. Free for 7 days from first sign-in. No card needed.
           </p>
 
           <div class="refresh">
@@ -141,8 +142,8 @@
         `;
       }
 
-      // Connected state. Modal title bar already says "TakumiForm -
-      // Embed in Website" so we don't repeat the form name; lead with status, then
+      // Connected state. Modal title bar already says "TakumiForm" so we
+      // don't repeat the form name; lead with status, then
       // the snippet (the thing the user came for), then secondary actions.
       //
       // No visible Sync button: Code.js fires a background sync against
@@ -169,6 +170,7 @@
           <div class="row">
             <a class="btn" href="${escapeHtml(d.previewUrl)}" target="_blank">Preview</a>
             <a class="btn" href="${escapeHtml(d.customizeUrl)}" target="_blank">Customize</a>
+            <a class="btn" href="${escapeHtml(d.uploadsUrl)}" target="_blank">File upload</a>
           </div>
 
           <p class="footnote">
@@ -246,12 +248,12 @@
                 if (node) node.dataset.syncedAt = String(Date.now());
                 setSyncState('ok', 'Synced just now');
               } else {
-                setSyncState('failed', 'Sync failed — try again');
+                setSyncState('failed', 'Sync failed, try again');
               }
             })
             .withFailureHandler(() => {
               resync.disabled = false;
-              setSyncState('failed', 'Sync failed — try again');
+              setSyncState('failed', 'Sync failed, try again');
             })
             .resyncNow();
         });

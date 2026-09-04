@@ -7,7 +7,10 @@ one batch. Two kinds of surface, with different release mechanics:
 - **Listing surfaces** (Marketplace SDK console): change only when the review
   is filed. Sections 1 to 4.
 - **Code surfaces** (menu, modal): shipped by `clasp push`, no review. Can go
-  out ahead of the listing. Sections 5 to 7.
+  out ahead of the listing. Sections 5 to 7. **Applied in code on 5 Sept 2026**
+  (menu item, dialog title, welcome copy, File upload link); the web app routes
+  `feature=file-upload` to the uploads tab and its docs already name the new
+  menu label, so `clasp push -f` the embed project promptly after deploying.
 
 House copy rules apply throughout (see ../takumiform/CLAUDE.md → Copy
 guidelines): no em-dashes or en-dashes, no AI-tell vocabulary, no parallel
@@ -123,11 +126,9 @@ Connected state:
 - Action links: "Preview" · "Customize" · "File upload" (adds the third)
 - "Iframe option (no JavaScript)" (unchanged)
 
-Engineering note for the "File upload" link: it should deep-link to
-`/dashboard?form=<id>&feature=file-upload`. The web app currently routes
-`feature=customize` to the customize tab and everything else to the
-dashboard; teach it to route `file-upload` to
-`/dashboard/forms/<localId>/uploads` before shipping this link.
+The "File upload" link deep-links to `/dashboard?form=<id>&feature=file-upload`
+(`uploadsUrl` in Snippets.js); the web app's `/dashboard` entry routes it to
+`/dashboard/forms/<localId>/uploads`.
 
 ## Out of scope for this batch
 
