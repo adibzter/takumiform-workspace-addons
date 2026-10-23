@@ -1,5 +1,3 @@
-const FEATURE = 'embed';
-
 // Embed snippet output is formatted to match how a human would write it:
 // leading comment so the user can find it in their source later, one
 // attribute per line on the iframe variant, two-space indentation.
@@ -24,11 +22,27 @@ function iframeSnippet(formId) {
   ].join('\n');
 }
 
-// The add-on publishes the form itself (see publishActiveForm in
-// Code.js), so the connect URL stays simple — the web app just imports
-// the schema. No publish flag needed in the URL.
-function connectUrl(formId) {
-  return APP_BASE + '/dashboard?form=' + encodeURIComponent(formId) + '&feature=' + FEATURE;
+// The connect deep link carries the mode the user picked on the welcome
+// state: `embed` keeps the form a form, `site` makes the web app record it
+// as a site on first connect and land on the Site tab. An optional
+// skeleton id rides along on the site link once the modal has written a
+// template into the form, so the web app can pick the matching site
+// template. The add-on publishes the form itself (see publishActiveForm in
+// Code.js), so no publish flag is needed in the URL.
+function connectUrl(formId, feature, skeletonId) {
+  var mode = feature === 'site' ? 'site' : 'embed';
+  var url = APP_BASE + '/dashboard?form=' + encodeURIComponent(formId) + '&feature=' + mode;
+  if (mode === 'site' && skeletonId) {
+    url += '&skeleton=' + encodeURIComponent(skeletonId);
+  }
+  return url;
+}
+
+// Resolve-and-302 into the Site tab (/dashboard/forms/<localId>/site) for a
+// connected site. Same URL as the site connect link; the web app tells the
+// two cases apart by whether the form already has a row.
+function siteSettingsUrl(formId) {
+  return connectUrl(formId, 'site');
 }
 
 // Server endpoint for in-place syncing — the modal now triggers this
@@ -36,6 +50,12 @@ function connectUrl(formId) {
 // app. Kept as a helper for clarity even though it's a single URL.
 function addonSyncUrl(formId) {
   return APP_BASE + '/api/forms/addon-sync';
+}
+
+// Where Code.js uploads the image bytes the sync response reported as
+// missing. One multipart POST per image.
+function addonImageUrl() {
+  return APP_BASE + '/api/forms/addon-image';
 }
 
 function previewUrl(formId) {
@@ -60,6 +80,17 @@ function statusUrl(formId) {
   return APP_BASE + '/api/forms/status?formId=' + encodeURIComponent(formId);
 }
 
+// Form skeletons (the structure a site vertical starts from) are static
+// JSON on the web app. The index lists { id, vertical, name }; each file
+// carries the items Skeletons.js writes into the form.
+function skeletonIndexUrl() {
+  return APP_BASE + '/api/sites/skeletons.json';
+}
+
+function skeletonUrl(skeletonId) {
+  return APP_BASE + '/api/sites/skeletons/' + encodeURIComponent(skeletonId) + '.json';
+}
+
 // Build the payload the web app's /api/forms/addon-sync expects. The
 // web app no longer fetches schemas from the Forms REST API itself
 // (verification reasons — see takumiform/CLAUDE.md), so the add-on is
@@ -72,12 +103,16 @@ function buildSyncPayload(form) {
   var questionIds = [];
   var pageCount = 1;
   var isQuiz = !!safeGet(function () { return form.isQuiz(); });
+  var images = {};
 
   for (var i = 0; i < items.length; i++) {
     var it = items[i];
     var serialized = serializeItem(it, isQuiz);
     if (!serialized) continue;
     serializedItems.push(serialized.json);
+    if (serialized.image) {
+      images[serialized.image.sha256] = serialized.image.blob;
+    }
     if (serialized.type === 'pageBreak') {
       pageCount++;
     } else if (serialized.type === 'group') {
@@ -120,6 +155,10 @@ function buildSyncPayload(form) {
     responderUri: responderUri,
     questionIds: questionIds,
     pageCount: pageCount,
+    // Blobs keyed by sha256, outside `schema` so the JSON body never
+    // carries image bytes. Code.js strips this before the sync POST and
+    // uploads only the hashes the web app asks for.
+    images: images,
   };
 }
 
@@ -179,7 +218,12 @@ function serializeItem(item, isQuiz) {
     return { json: Object.assign({}, base, { textItem: {} }), type: 'text' };
   }
   if (t === T.IMAGE) {
-    return { json: Object.assign({}, base, { imageItem: {} }), type: 'image' };
+    var image = serializeImage(item);
+    return {
+      json: Object.assign({}, base, { imageItem: image.json }),
+      type: 'image',
+      image: image.sha256 ? { sha256: image.sha256, blob: image.blob } : null,
+    };
   }
   if (t === T.VIDEO) {
     var v = item.asVideoItem();
@@ -373,6 +417,53 @@ function serializeItem(item, isQuiz) {
     json: Object.assign({}, base, { textItem: {} }),
     type: 'text',
   };
+}
+
+// Image items carry their bytes through FormApp (the REST contentUri is
+// never available to us, and the web app holds no Forms scope). The JSON
+// carries only a content hash; the blob rides alongside so Code.js can
+// upload the ones the web app has never seen. Anything that fails to read,
+// is empty, or is over 10 MB serializes as the bare imageItem it always
+// did, and the renderer skips it as before.
+var MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+function serializeImage(item) {
+  var empty = { json: {}, blob: null, sha256: null };
+  var imageItem = safeGet(function () { return item.asImageItem(); });
+  if (!imageItem) return empty;
+  var blob = safeGet(function () { return imageItem.getImage(); });
+  if (!blob) return empty;
+  var bytes = safeGet(function () { return blob.getBytes(); });
+  if (!bytes || bytes.length === 0 || bytes.length > MAX_IMAGE_BYTES) return empty;
+  var sha256 = safeGet(function () { return sha256Hex(bytes); });
+  if (!sha256) return empty;
+
+  var alignment = safeGet(function () { return imageItem.getAlignment(); });
+  return {
+    json: {
+      image: {
+        sha256: sha256,
+        contentType: safeGet(function () { return blob.getContentType(); }) || '',
+        altText: item.getTitle() || '',
+      },
+      width: safeGet(function () { return imageItem.getWidth(); }),
+      alignment: alignment ? String(alignment) : '',
+    },
+    blob: blob,
+    sha256: sha256,
+  };
+}
+
+// Utilities.computeDigest returns signed bytes (-128..127); mask each one
+// before printing so the hex matches what the web app computes.
+function sha256Hex(bytes) {
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes);
+  var hex = '';
+  for (var i = 0; i < digest.length; i++) {
+    var byte = digest[i] & 0xff;
+    hex += (byte < 16 ? '0' : '') + byte.toString(16);
+  }
+  return hex;
 }
 
 function choices(arr) {

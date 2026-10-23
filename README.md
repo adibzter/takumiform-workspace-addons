@@ -26,7 +26,7 @@ Pricing consolidated the same way (Sept 2026): one install unlocks the account, 
 | Templating | Apps Script `createTemplateFromFile(...).evaluate()` | Used to inline `Stylesheet.html` into each `Modal.html` via `<?!= include('Stylesheet') ?>` |
 | Frontend | Plain HTML + JS | No framework. Server functions are called via `google.script.run` |
 | OAuth scopes | `forms.currentonly` + `script.container.ui` + `script.external_request` | All non-sensitive — keeps the Marketplace verification bar low. Auto-publish once needed the sensitive `forms.body` scope (REST-only `setPublishSettings`); FormApp has since gained `setPublished()`, which authorizes under `forms.currentonly`, so we get it back for free |
-| Backend calls | `UrlFetchApp` against the TakumiForm web app | Status, sync, snippet generation |
+| Backend calls | `UrlFetchApp` against the TakumiForm web app | Status (`/api/forms/status`, which also reports the form's `mode`, `siteUrl` and `sitePublished`), sync, image upload (the sync response names the image hashes the web app is missing; each is POSTed as multipart to `/api/forms/addon-image`), and form skeletons (`/api/sites/skeletons.json` index, `/api/sites/skeletons/<id>.json` per template, written into the form with FormApp) |
 | Deploy tool | [clasp](https://github.com/google/clasp) via `npx @google/clasp@latest` | Never installed globally |
 
 ### Why a modal, not a sidebar
@@ -44,6 +44,7 @@ Formfacade ships 6+ Marketplace listings, one per SEO term, and we originally pl
 ├── appsscript.json     manifest — scopes only, no addOns block (Forms rejects it)
 ├── Code.js             onOpen / onInstall / showModal / include() + server endpoints called via google.script.run
 ├── Snippets.js         pure helpers — string builders, URL formatters (easy to read, easy to test)
+├── Skeletons.js        embed only — fetches a form skeleton from the web app and writes it into the form with FormApp
 ├── Modal.html          the add-on UI — HTML + inline JS, includes Stylesheet via templating
 ├── Stylesheet.html     shared CSS (a deliberate near-duplicate per add-on — see STYLEGUIDE.md)
 └── .clasp.json.example copy to .clasp.json with your scriptId (gitignored)
@@ -71,12 +72,12 @@ To create a new script bound to a specific Form (only way to test classic Forms 
 
 ## Current state
 
-- **embed/** — fully built out as a snippet generator with status check and deep links into the TakumiForm dashboard / customize editor. Deployed against a test form. Auto-publishes the form on modal open via `FormApp` `setPublished()` — no sensitive scope, no user step. Forms too old to support publishing fall back to the "click Publish yourself" footnote.
+- **embed/** — fully built out as a snippet generator with status check and deep links into the TakumiForm dashboard / customize editor. Deployed against a test form. Auto-publishes the form on modal open via `FormApp` `setPublished()` — no sensitive scope, no user step. Forms too old to support publishing fall back to the "click Publish yourself" footnote. The modal is mode-aware: the welcome state offers **Embed this form** and **Build a site from this form**, and a connected form that is a site shows Open site / Site settings / Customize instead of the snippet. A collapsed **Start from a template** section on every state writes one of the web app's form skeletons into the form (`applySkeleton` in `Code.js`, mapping in `Skeletons.js`), asking first when the form already has questions.
 - **file-upload/**, **payments/**, **quiz-scoring/**, **whatsapp-delivery/** — scaffolded with the old (broken) CardService + Workspace Add-on manifest. Per the consolidation they won't be pushed as their own Apps Script projects; each feature gets folded into `embed/` when it ships, and its scaffold folder deleted.
 
 ## Shared deep-link contract
 
-Every add-on links back to `https://takumiform.com/dashboard?form=<googleFormId>&feature=<slug>`. The TakumiForm web app reads `feature` and routes the user accordingly — e.g. `feature=customize` lands on `/dashboard/forms/<localId>/customize` after auto-importing the schema.
+Every add-on links back to `https://takumiform.com/dashboard?form=<googleFormId>&feature=<slug>`. The TakumiForm web app reads `feature` and routes the user accordingly — e.g. `feature=customize` lands on `/dashboard/forms/<localId>/customize` after auto-importing the schema, `feature=file-upload` on the File upload tab, `feature=site` on the Site tab. The welcome state's two connect links are `feature=embed` and `feature=site`; the web app records the form's mode (form or site) from whichever one was used on first connect. After the modal has applied a form skeleton, the site link also carries `&skeleton=<id>` so the web app can pick the matching site template.
 
 ## Marketplace publishing
 

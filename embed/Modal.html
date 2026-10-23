@@ -16,6 +16,14 @@
     <script>
       const root = document.getElementById('root');
 
+      // The template list survives re-renders (polling flips the modal to
+      // connected, Refresh repaints it) so the picker never reloads twice.
+      let skeletonList = null;
+      let skeletonsLoading = false;
+      // Once a template has been written into this form, the site connect
+      // link names it so the web app can pick the matching site template.
+      let appliedConnectSiteUrl = null;
+
       // Single call on modal open: fetch connection + status so we know
       // which state to render. getEmbedData() also publishes the form as
       // a side effect and reports the outcome in `d.publish`, so there's
@@ -34,13 +42,20 @@
           .getEmbedData();
       }
 
+      // Three states: disconnected, connected as a form (snippet), and
+      // connected as a site (no snippet, site links instead). `mode` comes
+      // from the status endpoint; a server that predates sites sends none
+      // and Code.js already reads that as 'form'.
       function render(d) {
         // Any in-flight connection poll belongs to the previous render.
         // Stop it here; wireUp() restarts polling only if we land back on
         // the disconnected state.
         stopPolling();
-        root.innerHTML = publishBanner(d.publish)
-          + (d.connected ? renderConnected(d) : renderDisconnected(d));
+        let body;
+        if (!d.connected) body = renderDisconnected(d);
+        else if (d.mode === 'site') body = renderConnectedSite(d);
+        else body = renderConnectedForm(d);
+        root.innerHTML = publishBanner(d.publish) + body + renderTemplates();
         wireUp();
         resizeModal();
       }
@@ -110,13 +125,21 @@
       // not the form's title or a "not connected" label. Keep the
       // checklist short; long lists get skimmed past.
       //
+      // Two ways in, because a form is either embedded or a site and the
+      // web app records the choice on first connect: "Embed this form"
+      // (feature=embed) is the primary, "Build a site" (feature=site) the
+      // secondary. Once a template has been applied from this modal the
+      // site link picks up `&skeleton=<id>` and the two swap emphasis: the
+      // user has just written a site skeleton, so the site is the next step.
+      //
       // No publish instructions here: the form was already published by
       // the time this rendered. publishBanner() covers the rare failure.
       function renderDisconnected(d) {
+        const sitePrimary = !!appliedConnectSiteUrl;
         return `
           <p class="welcome-title">Do more with this form</p>
           <p class="lead">
-            Connect once. Customize, embed, and collect files. Done.
+            Embed it on your site, or turn it into a one-page website. Connect once.
           </p>
 
           <ul class="checklist">
@@ -124,14 +147,20 @@
             <li>Match your colors, fonts, and logo</li>
             <li>Accept file uploads, no Google sign-in needed</li>
             <li>Auto-grade quizzes with instant scores</li>
-            <li>Auto-syncs when you edit the form</li>
+            <li>Or publish it as a one-page site, with this form as the content</li>
           </ul>
 
-          <a class="btn primary" id="connect-btn" href="${escapeHtml(d.connectUrl)}" target="_blank">
-            Connect to TakumiForm
+          <a class="btn${sitePrimary ? '' : ' primary'}" id="connect-btn" href="${escapeHtml(d.connectUrl)}" target="_blank">
+            Embed this form
           </a>
+          <a class="btn${sitePrimary ? ' primary' : ''}" id="connect-site-btn" href="${escapeHtml(appliedConnectSiteUrl || d.connectSiteUrl)}" target="_blank">
+            Build a site from this form
+          </a>
+          <p class="mode-note">
+            A form is either embedded or a site. Pick now, switch later in the dashboard.
+          </p>
           <p class="footnote">
-            Opens in a new tab. Sign in there, then come back here. <strong>This window updates on its own</strong> once you're connected. Free for 7 days from first sign-in. No card needed.
+            Either button opens a new tab. Sign in there, then come back here. <strong>This window updates on its own</strong> once you're connected. Free for 7 days from first sign-in. No card needed.
           </p>
 
           <div class="refresh">
@@ -142,23 +171,21 @@
         `;
       }
 
-      // Connected state. Modal title bar already says "TakumiForm" so we
-      // don't repeat the form name; lead with status, then
-      // the snippet (the thing the user came for), then secondary actions.
+      // Connected as a form. Modal title bar already says "TakumiForm" so
+      // we don't repeat the form name; lead with status, then the snippet
+      // (the thing the user came for), then secondary actions.
       //
-      // No visible Sync button: Code.js fires a background sync against
-      // /api/forms/addon-sync when the modal opens, and silently logs
-      // failures. The user can't act on a sync error from this surface,
-      // and the dashboard's own auto-sync covers anyone who switches over.
-      function renderConnected(d) {
+      // Sync happens in exactly two places: Code.js pushes the schema to
+      // /api/forms/addon-sync when this modal opens, and the "Sync now" link
+      // in the status row pushes it again. The web app never pulls (no
+      // Forms scope) and there is no background or dashboard sync, so a
+      // form edit reaches TakumiForm only through one of those two. Failures
+      // on open are logged to console, never shown.
+      function renderConnectedForm(d) {
         return `
           <div class="status-row">
             <span class="badge ok">Connected</span>
-            <span class="sync-status" id="sync-status" data-state="ok" data-synced-at="${Date.now()}">
-              <span class="when">Synced just now</span>
-              <span class="sep">·</span>
-              <button class="link" id="resync-btn" type="button">Sync now</button>
-            </span>
+            ${syncStatus()}
           </div>
 
           <p class="label">Embed snippet</p>
@@ -186,6 +213,76 @@
             <p class="hint">
               Use this only if the host page can't run JavaScript.
             </p>
+          </details>
+        `;
+      }
+
+      // Connected as a site. No snippet: the form is the site's content and
+      // the site has its own address. "Open site" leads once the site is
+      // published; before that, Site settings is where the address gets
+      // picked and the site goes live, so it takes the primary slot instead
+      // of a dead "Open site" button.
+      function renderConnectedSite(d) {
+        const live = !!(d.sitePublished && d.siteUrl);
+        const actions = live
+          ? `<a class="btn primary" href="${escapeHtml(d.siteUrl)}" target="_blank">Open site</a>
+             <a class="btn" href="${escapeHtml(d.siteSettingsUrl)}" target="_blank">Site settings</a>`
+          : `<a class="btn primary" href="${escapeHtml(d.siteSettingsUrl)}" target="_blank">Site settings</a>`;
+        const lead = live
+          ? `This form is a site, live at <a href="${escapeHtml(d.siteUrl)}" target="_blank">${escapeHtml(siteHost(d.siteUrl))}</a>. Edits you make to the form reach the site when you open this window or press Sync now.`
+          : `This form is a site, not published yet. Open Site settings to check the address and publish it. Edits you make to the form reach the site when you open this window or press Sync now.`;
+        return `
+          <div class="status-row">
+            <span class="badge ok">Connected</span>
+            <span class="badge site">Site</span>
+            ${syncStatus()}
+          </div>
+
+          <p class="lead">${lead}</p>
+
+          <div class="row">
+            ${actions}
+            <a class="btn" href="${escapeHtml(d.customizeUrl)}" target="_blank">Customize</a>
+          </div>
+
+          <p class="footnote">
+            Need the embed snippet instead? Switch this form back to a form in Site settings.
+            Google Forms™ is a trademark of Google LLC.
+          </p>
+        `;
+      }
+
+      function siteHost(url) {
+        try { return new URL(url).host; } catch (_) { return url; }
+      }
+
+      function syncStatus() {
+        return `
+          <span class="sync-status" id="sync-status" data-state="ok" data-synced-at="${Date.now()}">
+            <span class="when">Synced just now</span>
+            <span class="sep">·</span>
+            <button class="link" id="resync-btn" type="button">Sync now</button>
+          </span>
+        `;
+      }
+
+      // "Start from a template", on every state. Collapsed by default so
+      // the connected form state still fits the fixed modal height; the
+      // list loads the first time it's opened and is cached after that.
+      function renderTemplates() {
+        return `
+          <details id="templates">
+            <summary>Start from a template</summary>
+            <p class="hint">
+              Adds a ready-made set of sections and questions to this form. Edit anything afterwards in Google Forms™.
+            </p>
+            <div class="template-row">
+              <select id="skeleton-select" disabled>
+                <option value="">Loading templates…</option>
+              </select>
+              <button class="btn" id="apply-skeleton" type="button" disabled>Apply to this form</button>
+            </div>
+            <div class="template-status" id="skeleton-status"></div>
           </details>
         `;
       }
@@ -231,6 +328,160 @@
         node.dataset.state = state;
         const when = node.querySelector('.when');
         if (when && label) when.textContent = label;
+      }
+
+      // Template picker. The list is fetched on first expand, not on modal
+      // open, so users who never touch it don't pay the extra server call.
+      function loadSkeletons() {
+        if (skeletonsLoading || skeletonList) return;
+        skeletonsLoading = true;
+        setSkeletonStatus('', '');
+        google.script.run
+          .withSuccessHandler(res => {
+            skeletonsLoading = false;
+            if (res && res.ok && Array.isArray(res.skeletons)) {
+              skeletonList = res.skeletons;
+              fillSkeletonSelect();
+            } else {
+              skeletonLoadFailed(res && res.error);
+            }
+          })
+          .withFailureHandler(err => {
+            skeletonsLoading = false;
+            skeletonLoadFailed(err && err.message);
+          })
+          .listSkeletons();
+      }
+
+      function skeletonLoadFailed(reason) {
+        const select = document.getElementById('skeleton-select');
+        if (select) {
+          select.innerHTML = '<option value="">Templates unavailable</option>';
+          select.disabled = true;
+        }
+        setSkeletonStatus('error',
+          'Couldn\'t load templates' + reasonSuffix(reason) + '. '
+          + '<button class="link" id="skeleton-retry" type="button">Try again</button>');
+        const retry = document.getElementById('skeleton-retry');
+        if (retry) retry.addEventListener('click', () => {
+          if (select) {
+            select.innerHTML = '<option value="">Loading templates…</option>';
+          }
+          loadSkeletons();
+        });
+      }
+
+      // Options grouped by vertical, in the order the index lists them.
+      // Built with DOM calls so template names never go through innerHTML.
+      function fillSkeletonSelect() {
+        const select = document.getElementById('skeleton-select');
+        const apply = document.getElementById('apply-skeleton');
+        if (!select || !apply || !skeletonList) return;
+        select.innerHTML = '';
+        if (skeletonList.length === 0) {
+          select.appendChild(option('', 'No templates yet'));
+          select.disabled = true;
+          apply.disabled = true;
+          return;
+        }
+        select.appendChild(option('', 'Choose a template'));
+        const groups = {};
+        const verticals = [];
+        skeletonList.forEach(s => {
+          const vertical = String(s.vertical || 'other');
+          if (!groups[vertical]) { groups[vertical] = []; verticals.push(vertical); }
+          groups[vertical].push(s);
+        });
+        verticals.forEach(vertical => {
+          const group = document.createElement('optgroup');
+          group.label = vertical.charAt(0).toUpperCase() + vertical.slice(1);
+          groups[vertical].forEach(s => group.appendChild(option(s.id, s.name || s.id)));
+          select.appendChild(group);
+        });
+        select.disabled = false;
+        apply.disabled = !select.value;
+      }
+
+      function option(value, label) {
+        const node = document.createElement('option');
+        node.value = value;
+        node.textContent = label;
+        return node;
+      }
+
+      // Writes the chosen skeleton into the form. The server refuses a form
+      // that already has items with 'not-empty'; we then ask inline (an
+      // in-page confirm, since window.confirm is unreliable inside the
+      // Apps Script sandbox) and retry with allowAppend = true.
+      function applySelectedSkeleton(allowAppend) {
+        const select = document.getElementById('skeleton-select');
+        const apply = document.getElementById('apply-skeleton');
+        const skeletonId = select && select.value;
+        if (!skeletonId) return;
+        select.disabled = true;
+        apply.disabled = true;
+        setSkeletonStatus('working', 'Adding the template to your form. This can take a few seconds, longer with pictures…');
+        google.script.run
+          .withSuccessHandler(res => {
+            if (res && res.ok) {
+              if (res.connectSiteUrl) {
+                appliedConnectSiteUrl = res.connectSiteUrl;
+                const siteBtn = document.getElementById('connect-site-btn');
+                const embedBtn = document.getElementById('connect-btn');
+                if (siteBtn) {
+                  siteBtn.href = appliedConnectSiteUrl;
+                  siteBtn.classList.add('primary');
+                }
+                if (embedBtn) embedBtn.classList.remove('primary');
+              }
+              let line = 'Added ' + res.added + (res.added === 1 ? ' item' : ' items') + ' to this form';
+              if (res.skipped) line += ' (' + res.skipped + ' skipped)';
+              line += '. Close this window to see them; reload the page if they don\'t show.';
+              setSkeletonStatus('ok', escapeHtml(line));
+              finishApply();
+            } else if (res && res.error === 'not-empty') {
+              askToAppend();
+            } else {
+              setSkeletonStatus('error', 'Couldn\'t apply the template' + reasonSuffix(res && res.error) + '.');
+              finishApply();
+            }
+          })
+          .withFailureHandler(err => {
+            setSkeletonStatus('error', 'Couldn\'t apply the template' + reasonSuffix(err && err.message) + '.');
+            finishApply();
+          })
+          .applySkeleton(skeletonId, !!allowAppend);
+      }
+
+      function askToAppend() {
+        setSkeletonStatus('confirm',
+          'This form already has questions. Add the template\'s items after them? '
+          + '<button class="link" id="skeleton-append" type="button">Yes, add them</button>'
+          + '<span class="sep">·</span>'
+          + '<button class="link" id="skeleton-cancel" type="button">Cancel</button>');
+        document.getElementById('skeleton-append')
+          .addEventListener('click', () => applySelectedSkeleton(true));
+        document.getElementById('skeleton-cancel')
+          .addEventListener('click', () => { setSkeletonStatus('', ''); finishApply(); });
+      }
+
+      function finishApply() {
+        const select = document.getElementById('skeleton-select');
+        const apply = document.getElementById('apply-skeleton');
+        if (select) select.disabled = false;
+        if (apply) apply.disabled = !(select && select.value);
+      }
+
+      function setSkeletonStatus(state, html) {
+        const node = document.getElementById('skeleton-status');
+        if (!node) return;
+        node.dataset.state = state || '';
+        node.innerHTML = html || '';
+        resizeModal();
+      }
+
+      function reasonSuffix(reason) {
+        return reason ? ' (' + escapeHtml(reason) + ')' : '';
       }
 
       function wireUp() {
@@ -294,6 +545,21 @@
             })
             .getEmbedData();
         });
+
+        // Template picker: load on first expand, apply on click. A cached
+        // list from a previous render fills the select straight away.
+        const templates = document.getElementById('templates');
+        if (templates) {
+          templates.addEventListener('toggle', () => { if (templates.open) loadSkeletons(); });
+          const select = document.getElementById('skeleton-select');
+          const apply = document.getElementById('apply-skeleton');
+          select.addEventListener('change', () => {
+            apply.disabled = !select.value;
+            setSkeletonStatus('', '');
+          });
+          apply.addEventListener('click', () => applySelectedSkeleton(false));
+          if (skeletonList) fillSkeletonSelect();
+        }
 
         document.querySelectorAll('details').forEach(d => {
           d.addEventListener('toggle', resizeModal);

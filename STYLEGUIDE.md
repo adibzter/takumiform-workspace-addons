@@ -95,7 +95,7 @@ Short list of benefits with brand-colored checkmarks. Use on welcome screens. Ke
 <ul class="checklist">
   <li>Works on any site</li>
   <li>Match your colors and fonts</li>
-  <li>Auto-syncs when you edit the form</li>
+  <li>Edits reach TakumiForm when you open this window</li>
 </ul>
 ```
 
@@ -112,6 +112,7 @@ Status pill with a colored dot. Goes near the top of the modal to telegraph stat
 | --- | --- |
 | `.ok` | Connected, synced, published, working |
 | `.no` | Disconnected, action needed |
+| `.site` | The form is a site (brand tint, sits next to `.ok` on the connected site state) |
 
 ### Button
 
@@ -125,8 +126,9 @@ Status pill with a colored dot. Goes near the top of the modal to telegraph stat
 ```
 
 - One `.primary` per screen — the main thing the user should do next.
-- Stack with `.btn + .btn` (auto top-margin).
+- Stack with `.btn + .btn` (auto 8px top-margin). The welcome state stacks Embed (primary) over Build a site this way, with a `.mode-note` one-liner under the pair.
 - Use `.row` for two equal-weight side-by-side actions.
+- `.btn:disabled` dims to 50%; use it on `<button class="btn">` while a server call is running.
 
 ### Snippet box
 
@@ -176,6 +178,20 @@ For options the user doesn't usually need.
   <div>...</div>
 </details>
 ```
+
+### Template picker
+
+A select grouped by vertical next to an Apply button, then a status line. The status line doubles as the inline confirm ("This form already has questions. Add the template's items after them?") because `window.confirm` isn't reliable inside the Apps Script sandbox. Lives inside a collapsed section so the connected state keeps fitting the fixed modal height.
+
+```html
+<div class="template-row">
+  <select id="skeleton-select">...</select>
+  <button class="btn" type="button">Apply to this form</button>
+</div>
+<div class="template-status" data-state="ok">Added 11 items to this form.</div>
+```
+
+`data-state` is `working` (italic), `ok` (green), `error` (red) or `confirm` (ink, with two `.link` buttons separated by a `.sep`). An empty status line collapses to nothing.
 
 ### Loading / error
 

@@ -33,9 +33,9 @@ These are the web-app endpoints the add-on depends on. If you change what the ad
 | image upload in `Snippets.js` | `api/forms/addon-image.ts` |
 | `fetchStatus` / `checkConnection` | `api/forms/status.ts` (`connected`, `mode`, `siteUrl`, `sitePublished`) |
 | `listSkeletons` / `applySkeleton` | `api/sites/skeletons.json.ts`, `api/sites/skeletons/` |
-| connect / settings deep links (`feature=embed|site|customize|file-upload`) | `pages/dashboard/index.astro` |
+| connect / settings deep links (`/dashboard?form=<id>&feature=embed|site|customize|file-upload`, site link optionally `&skeleton=<id>`) | `pages/dashboard/index.astro`. On first connect with `feature=site` the web app creates a draft site (address auto-picked from the form title, with `-2`, `-3`... fallbacks) and, when `&skeleton=<id>` is present, applies that vertical's curated site template. Nothing is published; the owner presses Publish on the Site tab. |
 
-Known gap (Oct 2026): the site connect link appends `&skeleton=<id>` after a template is applied, but `dashboard/index.astro` doesn't read it yet, so the matching site template is not picked on first connect.
+Sync is push-only: the web app never pulls. Schema reaches it when the modal opens on a connected form or the user presses Sync now. There is no dashboard or background sync (that would need `script.scriptapp`, which the owner declined), so copy must not promise one.
 
 Older servers may lack newer fields: read a missing `mode` as `'form'`, and treat any missing field as the old behavior rather than an error.
 

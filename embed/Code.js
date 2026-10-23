@@ -66,10 +66,16 @@ function getEmbedData() {
     formId: formId,
     title: form.getTitle() || 'Untitled form',
     connected: status.connected,
+    // 'form' or 'site'. Decides which connected state the modal paints.
+    mode: status.mode,
+    siteUrl: status.siteUrl,
+    sitePublished: status.sitePublished,
     publish: publish,
     script: scriptSnippet(formId),
     iframe: iframeSnippet(formId),
-    connectUrl: connectUrl(formId),
+    connectUrl: connectUrl(formId, 'embed'),
+    connectSiteUrl: connectUrl(formId, 'site'),
+    siteSettingsUrl: siteSettingsUrl(formId),
     previewUrl: previewUrl(formId),
     customizeUrl: customizeUrl(formId),
     uploadsUrl: uploadsUrl(formId)
@@ -116,9 +122,15 @@ function publishActiveForm(form) {
 //
 // Returns { ok: boolean, error?: string }. Errors are still logged to
 // Stackdriver so we don't lose the diagnostic.
+//
+// Image bytes never travel in the JSON body: the payload carries hashes,
+// and the sync response lists the ones the web app is missing, which are
+// uploaded afterwards. An image that fails to upload never fails the sync.
 function triggerSchemaPush(form) {
   try {
     var payload = buildSyncPayload(form);
+    var images = payload.images || {};
+    delete payload.images;
     var res = UrlFetchApp.fetch(addonSyncUrl(form.getId()), {
       method: 'post',
       contentType: 'application/json',
@@ -130,10 +142,51 @@ function triggerSchemaPush(form) {
       console.error('addon-sync non-2xx:', code, res.getContentText());
       return { ok: false, error: 'HTTP ' + code };
     }
+    uploadMissingImages(form.getId(), images, res.getContentText());
     return { ok: true };
   } catch (e) {
     console.error('addon-sync trigger failed:', e && e.message);
     return { ok: false, error: (e && e.message) || 'request-failed' };
+  }
+}
+
+// One multipart POST per image the sync response named in `missingImages`.
+// Capped per push so a form with dozens of large images can't hold the
+// modal open for minutes; whatever is left goes on the next sync, because
+// the web app keeps asking until it has them all.
+var MAX_IMAGE_UPLOADS_PER_PUSH = 20;
+
+function uploadMissingImages(formId, images, syncResponseText) {
+  var missing;
+  try {
+    missing = JSON.parse(syncResponseText).missingImages;
+  } catch (_) {
+    return;
+  }
+  if (!Array.isArray(missing) || missing.length === 0) return;
+
+  var attempted = 0;
+  for (var i = 0; i < missing.length && attempted < MAX_IMAGE_UPLOADS_PER_PUSH; i++) {
+    var sha256 = missing[i];
+    var blob = images[sha256];
+    if (!blob) continue;
+    attempted++;
+    try {
+      // A Blob value makes UrlFetchApp send multipart/form-data; the part
+      // only arrives server-side as a file when the blob has a name.
+      if (!blob.getName()) blob.setName(sha256);
+      var res = UrlFetchApp.fetch(addonImageUrl(), {
+        method: 'post',
+        payload: { formId: formId, sha256: sha256, file: blob },
+        muteHttpExceptions: true,
+      });
+      var code = res.getResponseCode();
+      if (code < 200 || code >= 300) {
+        console.error('addon-image non-2xx:', code, sha256, res.getContentText());
+      }
+    } catch (e) {
+      console.error('addon-image upload failed:', sha256, e && e.message);
+    }
   }
 }
 
@@ -155,14 +208,63 @@ function checkConnection() {
   return fetchStatus(FormApp.getActiveForm().getId());
 }
 
-// Returns { connected: bool } from our server. Used on modal load and by
-// the "Refresh" link after the user has connected in a separate tab.
+// Reads the form's status from our server, normalized so the modal can
+// branch without null checks: { connected, mode, siteUrl, sitePublished }.
+// `mode` is 'form' or 'site'; a server that predates sites sends none,
+// which reads as 'form'. Any failure reads as not connected.
 function fetchStatus(formId) {
+  var status = { connected: false, mode: 'form', siteUrl: null, sitePublished: false };
   try {
-    const res = UrlFetchApp.fetch(statusUrl(formId), { muteHttpExceptions: true });
-    if (res.getResponseCode() !== 200) return { connected: false };
-    return JSON.parse(res.getContentText());
+    var res = UrlFetchApp.fetch(statusUrl(formId), { muteHttpExceptions: true });
+    if (res.getResponseCode() !== 200) return status;
+    var body = JSON.parse(res.getContentText());
+    status.connected = !!body.connected;
+    status.mode = body.mode === 'site' ? 'site' : 'form';
+    status.siteUrl = typeof body.siteUrl === 'string' && body.siteUrl ? body.siteUrl : null;
+    status.sitePublished = !!body.sitePublished;
+    return status;
   } catch (e) {
-    return { connected: false };
+    return status;
   }
+}
+
+// Writes a form skeleton (a vertical's starting structure, served by the
+// web app) into the active form, item by item. Refuses a form that already
+// has items unless the modal confirmed appending, then pushes the schema
+// so the dashboard sees the new structure. One bad item is logged and
+// skipped, never fatal: a stray item is easy to delete in Forms, while a
+// half-written skeleton behind an error is not. The FormApp mapping per
+// item type lives in Skeletons.js.
+//
+// Returns { ok: true, added, skipped, connectSiteUrl } or { ok: false, error }
+// where error is 'not-empty', 'bad-id', 'HTTP nnn', 'bad-json',
+// 'bad-response' or 'request-failed'.
+function applySkeleton(skeletonId, allowAppend) {
+  var form = FormApp.getActiveForm();
+  if (!allowAppend && form.getItems().length > 0) {
+    return { ok: false, error: 'not-empty' };
+  }
+  var fetched = fetchSkeleton(skeletonId);
+  if (!fetched.ok) return fetched;
+  var items = fetched.skeleton.items;
+  var added = 0;
+  var skipped = 0;
+  for (var i = 0; i < items.length; i++) {
+    if (addSkeletonItem(form, items[i])) added++; else skipped++;
+  }
+  triggerSchemaPush(form);
+  return {
+    ok: true,
+    added: added,
+    skipped: skipped,
+    // The site connect link now names the skeleton, so the web app can
+    // pick the matching site template on first connect.
+    connectSiteUrl: connectUrl(form.getId(), 'site', skeletonId),
+  };
+}
+
+// Feeds the modal's template picker.
+// Returns { ok: true, skeletons: [{ id, vertical, name }] } or { ok: false, error }.
+function listSkeletons() {
+  return fetchSkeletonIndex();
 }
