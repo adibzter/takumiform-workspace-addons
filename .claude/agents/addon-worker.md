@@ -29,9 +29,9 @@ These are the web-app endpoints the add-on depends on. If you change what the ad
 
 | Add-on caller | Web-app handler |
 | --- | --- |
-| sync POST in `Code.js` | `api/forms/addon-sync.ts` (returns `missingImages`) |
-| image upload in `Snippets.js` | `api/forms/addon-image.ts` |
-| `fetchStatus` / `checkConnection` | `api/forms/status.ts` (`connected`, `mode`, `siteUrl`, `sitePublished`) |
+| sync POST in `Code.js` | `api/forms/addon-sync.ts` (returns `missingImages`; 409 for a form id starting `tk_` or a row built on takumiform.com, which the add-on never syncs) |
+| image upload in `Snippets.js` | `api/forms/addon-image.ts` (409 for takumi-built rows) |
+| `fetchStatus` / `checkConnection` | `api/forms/status.ts` (`connected`, `mode`, `siteUrl`, `sitePublished`; a site built on takumiform.com answers `connected: false`) |
 | `listSkeletons` / `applySkeleton` | `api/sites/skeletons.json.ts`, `api/sites/skeletons/` |
 | connect / settings deep links (`/dashboard?form=<id>&feature=embed|site|customize|file-upload`, site link optionally `&skeleton=<id>`) | `pages/dashboard/index.astro`. On first connect with `feature=site` the web app creates a draft site (address auto-picked from the form title, with `-2`, `-3`... fallbacks) and, when `&skeleton=<id>` is present, applies the site template suggested for that vertical. Skeleton JSON no longer contains image items (the sample photos were removed); the add-on's image handling stays for any future skeleton that has them. Nothing is published; the owner presses Publish on the Site tab. |
 
